@@ -1,9 +1,5 @@
 # ComPASS: Processor-PIM Collaboration Protocol Architecture and Scheduling Solution
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
-[![C++ Standard](https://img.shields.io/badge/C%2B%2B-11-blue.svg)]()
-[![Target Paper](https://img.shields.io/badge/Target%20Paper-MICRO%202025-orange.svg)]()
-[![License](https://img.shields.io/badge/license-MIT%2FApache-lightgrey.svg)]()
 
 > **Implementation Artifact for:**  
 > *"ComPASS: A Compatible PIM Protocol Architecture and Scheduling Solution for Processor-PIM Collaboration"* (MICRO 2025).
