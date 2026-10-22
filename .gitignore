@@ -1,0 +1,21 @@
+# Compiled binaries
+ramulator/ramulator
+PIMSimulator/sim
+*.o
+*.gch
+
+# Build artifacts & stats
+ramulator/obj/
+*.stats
+
+# Large SPEC CPU compressed traces (300MB - prevents GitHub 50MB/100MB rejection)
+ramulator/cputraces/*.gz
+
+# Generated numpy arrays (easily regenerated with gen_*.py scripts)
+PIMSimulator/data/*/*.npy
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+*.swp
+

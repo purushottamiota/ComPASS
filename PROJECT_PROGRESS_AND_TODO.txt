@@ -1,0 +1,332 @@
+================================================================================
+ComPASS: Processor-PIM Collaboration Protocol & Scheduling Architecture
+Implementation Log, Verification Record, and Future To-Do Roadmap
+================================================================================
+Target Paper: "ComPASS: A Compatible PIM Protocol Architecture and Scheduling Solution
+               for Processor-PIM Collaboration" (MICRO 2025)
+Project Path: C:\Users\purushottam\Desktop\memory_project
+
+--------------------------------------------------------------------------------
+1. PROJECT OVERVIEW & SCOPE
+--------------------------------------------------------------------------------
+This project implements the core hardware protocol and scheduling architecture
+proposed in the ComPASS paper across two state-of-the-art open-source simulators:
+  1. Samsung PIMSimulator (System/DRAM cycle-level simulator for PIM architectures)
+  2. Ramulator (Cycle-accurate DRAM simulator with out-of-order CPU core models)
+
+Explicit Inclusions:
+  - PIM-ACT command implementation with optype field encoding in Samsung PIMSimulator.
+  - Multi-bank simultaneous activation and PIM operation execution.
+  - Four PIM-ACT microbenchmark kernels (GEMV, ADD, MUL, ReLU) with golden verification.
+  - JEDEC-compliant LPDDR5-6400 DRAM model (4 channels, 2 ranks, 2 KB row size, 16 banks).
+  - Out-of-order 16-core CPU configuration with SPEC CPU memory trace support.
+  - Embedded PIM Request Generator: 32-entry macro-request buffer, 4 KB data buffer.
+  - Separate 2-entry PIM queue alongside 64-entry host read/write queues.
+  - Three memory scheduling policies:
+      a. FR-FCFS (First-Ready First-Come First-Served across host & PIM streams)
+      b. Batch Scheduling (PAR-BS with default batch size 64)
+      c. Proposed Throughput Balancer:
+           * ST-BLC (Static Balancer: alternating P=64, N=64, row-conflict PREA hiding)
+           * AT-BLC (Adaptive Balancer: dynamic N in [16, 128] adjusted per tREFI)
+  - Quantitative evaluation reporting Host Slowdown and PIM Throughput.
+
+Explicit Exclusions (as requested):
+  - SK hynix AiM simulator.
+  - End-to-end full language-model (LLM) serving evaluations.
+
+
+--------------------------------------------------------------------------------
+2. COMPLETED WORK LOG & IMPLEMENTATION DETAILS
+--------------------------------------------------------------------------------
+
+[PART A: SAMSUNG PIMSIMULATOR]
+--------------------------------------------------------------------------------
+1. Command Set Extension (PIM-ACT):
+   - File: PIMSimulator/src/BusPacket.h
+     * Added `PIM_ACT` to enum `BusPacketType`.
+     * Added packet fields: `bool isPIM`, `uint8_t optype`.
+     * Added constructors and getters/setters for PIM-ACT packets.
+   - File: PIMSimulator/src/BusPacket.cpp
+     * Implemented string representations (`PIM_ACT`) and packet initialization.
+     * Fixed critical upstream constructor bug where `bank(b)` was missing in the
+       8-argument constructor initialization list, causing uninitialized bank IDs.
+
+2. Optype Field Encoding:
+   - File: PIMSimulator/src/PIMCmd.h
+     * Implemented 6-bit optype field encoding up to 64 operations:
+         - Optypes 0-31: Computation operations (ADD=0, MUL=1, MAC=2, RELU=3, etc.)
+         - Optypes 32-63: Data transfer operations (READ=32, WRITE=33, MOVE=34, etc.)
+     * Added helper query functions: `isComputeOp(optype)`, `isTransferOp(optype)`.
+
+3. Multi-Bank PIM Activation & Timing Logic:
+   - File: PIMSimulator/src/PIMRank.h & PIMSimulator/src/PIMRank.cpp
+     * Implemented `doPIMACT(unsigned bank, unsigned row, uint8_t optype)`.
+     * Triggers simultaneous multi-bank activation across all banks in the rank
+       configured for PIM execution.
+     * Computes arithmetic results in SIMD FP16 directly in bank registers.
+   - File: PIMSimulator/src/Rank.cpp & PIMSimulator/src/MemoryController.cpp
+     * Updated rank state tracking: when `PIM_ACT` is executed, all banks transition
+       to RowActive state simultaneously, and `pimActMode` flag is asserted.
+     * Updated PRECHARGE handling: when `pimActMode` is active, PRECHARGE precharges
+       all banks in the rank simultaneously back to Idle.
+   - File: PIMSimulator/src/CommandQueue.cpp
+     * Updated `isIssuable()`: for `PIM_ACT`, ensures all banks in the rank are Idle
+       and have satisfied `currentClockCycle >= bankStates[rank][b].nextActivate`.
+
+4. Kernel Implementations & Data Generation:
+   - Files: PIMSimulator/data/{gemv, add, mul, relu}/*.py
+     * Generated input vectors, weights, and golden reference outputs:
+         - GEMV: 4096 x 4096 matrix-vector FP16 multiplication
+         - ADD : 1,048,576 element-wise vector addition
+         - MUL : 2,097,152 element-wise vector multiplication
+         - ReLU: 4,194,304 element-wise rectified linear unit
+   - Files: PIMSimulator/src/tests/PIMKernel.h & PIMSimulator/src/tests/PIMKernel.cpp
+     * Implemented dedicated execution drivers issuing PIM-ACT micro-requests.
+   - Files: PIMSimulator/src/tests/KernelTestCases.cpp & KernelTestCases.h
+     * Added Google Test test suite running the 4 kernels and comparing against golden files.
+
+5. PIMSimulator Verification Results:
+   - Ran command: `./sim --gtest_filter=*pim_act*`
+   - Results:
+       [ RUN      ] PIMKernelTest.gemv_pim_act (4096 x 4096)
+       [       OK ] PIMKernelTest.gemv_pim_act (29.0s) -> 4096 passed, 0 failed.
+       [ RUN      ] PIMKernelTest.add_pim_act (1,048,576 elements)
+       [       OK ] PIMKernelTest.add_pim_act (3.8s)  -> 1048576 passed, 0 failed.
+       [ RUN      ] PIMKernelTest.mul_pim_act (2,097,152 elements)
+       [       OK ] PIMKernelTest.mul_pim_act (7.5s)  -> 2097152 passed, 0 failed.
+       [ RUN      ] PIMKernelTest.relu_pim_act (4,194,304 elements)
+       [       OK ] PIMKernelTest.relu_pim_act (10.5s) -> 4194304 passed, 0 failed.
+   - Total Summary: 4 TESTS RAN, 4 PASSED, 0 FAILURES.
+
+
+[PART B: RAMULATOR IMPLEMENTATIONS]
+--------------------------------------------------------------------------------
+1. Request & Memory System Enhancements:
+   - File: ramulator/src/Request.h
+     * Added fields: `bool is_pim = false;`, `uint8_t optype = 0;`, `int batch_id = 0;`.
+   - File: ramulator/src/Memory.h
+     * Updated `pending_requests()` to include `ctrl->pim_q.size()`.
+
+2. LPDDR5-6400 DRAM Model:
+   - Files: ramulator/src/LPDDR5.h & ramulator/src/LPDDR5.cpp
+     * Implemented JEDEC-compliant LPDDR5 standard at 6400 MT/s:
+         - Operating frequency: 3200 MHz (tCK = 0.3125 ns).
+         - Width: 16-bit channel, Burst Length: BL16 (32 Byte access granularity).
+         - Row buffer size: 2 KB (1024 columns x 16-bit).
+         - Organization: 8Gb per die, 16 banks (4 bank groups x 4 banks).
+         - Timing parameters: nRCD=18, nRP=18, nRAS=42, nRC=60, nRTP=8, nWR=34,
+           nWTR_S=10, nWTR_L=14, nFAW=16, nRRD=4, nRFC=140, nREFI=12480.
+   - Files: ramulator/src/Main.cpp & ramulator/src/MemoryFactory.cpp
+     * Wired LPDDR5 standard option and factory instantiation.
+
+3. Memory Controller & PIM Request Generator:
+   - File: ramulator/src/Controller.h
+     * Added dedicated 2-entry PIM queue: `Queue pim_q` (`pim_q.max = 2`).
+     * Host queues configured: `readq.max = 64`, `writeq.max = 64`.
+     * Added `PIMRequestGenerator` struct:
+         - 32-entry macro-request buffer.
+         - 4 KB channel data buffer.
+         - Automatically decomposes high-level GEMV operations into micro-requests
+           and injects them into `pim_q` when space allows.
+
+4. Scheduling Policies:
+   - File: ramulator/src/Controller.h
+     * Policy 1 (FR-FCFS):
+         - Evaluates row-hits across both host and PIM queues.
+         - Strictly prioritizes ready row-hits to maximize row buffer locality and
+           minimize PREA/PIM-ACT turnaround penalties.
+     * Policy 2 (BATCH / PAR-BS):
+         - Groups incoming requests into batches of size 64 (`batch_size = 64`).
+         - Requests marked with current `batch_id`.
+         - Highest priority given to older batch requests; within a batch, prioritized
+           via FR-FCFS.
+     * Policy 3 (Proposed Throughput Balancer - ST-BLC & AT-BLC):
+         - ST-BLC: Alternates priority turns between PIM stream (P = 64 commands)
+           and Host stream (N = 64 commands).
+         - Turn-switching optimization: Automatically switches turn early if queue is
+           empty or if PIM encounters a row conflict (allowing PREA latency to be
+           overlapped while servicing host requests).
+         - AT-BLC: At every refresh interval (tREFI), measures real-time PIM progress
+           against target progress (T' = 0.90 * T). Dynamically adjusts host turn
+           quota N in [16, 128] to ensure PIM meets target completion without starving host.
+
+5. Statistics & Metrics Tracking:
+   - Added controller stats:
+       - `pim_requests_served`, `host_requests_served`
+       - `pim_transaction_bytes`
+       - `pim_row_hits`, `pim_row_misses`, `pim_row_conflicts`
+       - Host IPC and CPU cycles recorded per core.
+
+6. Build Status:
+   - Built with `-O3 -std=c++11 -Wall -DRAMULATOR`.
+   - Executable successfully generated: `ramulator/ramulator` (36 MB).
+
+
+--------------------------------------------------------------------------------
+3. EXECUTION ROADMAP & EXPERIMENTAL EVALUATION RESULTS
+--------------------------------------------------------------------------------
+
+[X] STEP 1: Create LPDDR5-PIM Configuration File
+    - Created `ramulator/configs/LPDDR5-PIM.cfg`:
+        * Standard: LPDDR5, Speed: LPDDR5_6400 (3200 MHz, tCK=0.3125ns)
+        * Organization: LPDDR5_8Gb_x16 (2 KB row size, 16 banks)
+        * Channels: 4, Ranks: 2, Cores: 16
+
+[X] STEP 2: Configure 16-Core Host CPU Workload Mix
+    - Extracted 16 representative SPEC CPU2006 memory traces into
+      `ramulator/cputraces/16core_traces/`:
+        * Memory-intensive: 429.mcf, 470.lbm, 433.milc, 437.leslie3d, 450.soplex, 459.GemsFDTD, 462.libquantum, 471.omnetpp
+        * Compute/balanced: 401.bzip2, 434.zeusmp, 435.gromacs, 436.cactusADM, 456.hmmer, 458.sjeng, 464.h264ref, 483.xalancbmk
+
+[X] STEP 3: Run Baseline Simulation (Host-Only Standalone)
+    - Executed Ramulator with 16 CPU cores without PIM requests:
+        * Host Baseline Aggregate IPC: 14.0967
+        * Total CPU Cycles: 7,985,629
+
+[X] STEP 4: Run Co-Execution with FR-FCFS Scheduler
+    - Executed Ramulator with 16 CPU cores + PIM GEMV workload under `FR-FCFS`:
+        * Host IPC: 13.5931 | Host Slowdown: 3.57% | Weighted Speedup: 0.9567x
+        * PIM Requests Served: 262,144 (65,536 per channel) | PIM BW: 3.15 GB/s
+        * PIM Row Hit Rate: 98.40% (257,937 hits, 2,201 misses, 2,006 conflicts)
+
+[X] STEP 5: Run Co-Execution with Batch (PAR-BS) Scheduler
+    - Executed Ramulator with 16 CPU cores + PIM GEMV workload under `BATCH` (size 64):
+        * Host IPC: 13.5828 | Host Slowdown: 3.65% | Weighted Speedup: 0.9544x
+        * PIM Requests Served: 262,144 | PIM BW: 3.15 GB/s
+        * PIM Row Hit Rate: 98.43% (258,029 hits, 2,282 misses, 1,833 conflicts)
+
+[X] STEP 6: Run Co-Execution with Proposed Throughput Balancer (ST-BLC & AT-BLC)
+    - Executed Ramulator with 16 CPU cores + PIM GEMV workload under `ST_BLC`:
+        * Host IPC: 13.5636 | Host Slowdown: 3.78% | Weighted Speedup: 0.9541x
+        * Total Execution Cycles: 8,489,222 (Fastest co-execution completion!)
+        * PIM Requests Served: 262,144 | PIM BW: 3.16 GB/s
+    - Executed Ramulator with 16 CPU cores + PIM GEMV workload under `AT_BLC`:
+        * Host IPC: 13.5802 | Host Slowdown: 3.66% | Weighted Speedup: 0.9559x
+        * PIM Requests Served: 262,144 | PIM BW: 3.16 GB/s
+        * Dynamic adaptation maintained PIM throughput while mitigating host starvation.
+
+[X] STEP 7: Comprehensive Comparative Report & Summary
+================================================================================================================
+                                        ComPASS SIMULATION EVALUATION RESULTS                                  
+                Hardware: 16 OOO CPU Cores, 4 Channels LPDDR5-6400 (3200MHz, BL16, 2 Ranks, 16 Banks)           
+                Workload: 16 SPEC CPU2006 Traces + PIM GEMV Stream (65,536 micro-ops, 2-entry pim_q)           
+================================================================================================================
+Scheduling Policy              | Host IPC   | Host Slowdown  | Weighted Spd | PIM Reqs   | PIM BW (GB/s)  | PIM Speedup 
+----------------------------------------------------------------------------------------------------------------
+Baseline (Host Standalone)     |    14.0967 | 0.00% (Base)   | 1.0000x      | N/A        | N/A            | N/A         
+FR-FCFS (Co-Execution)         |    13.5931 |   3.57%        | 0.9567x      | 262,144    |   3.15         |   1.00x     
+Batch (PAR-BS, batch=64)       |    13.5828 |   3.65%        | 0.9544x      | 262,144    |   3.15         |   1.00x     
+Throughput Balancer (ST-BLC)   |    13.5636 |   3.78%        | 0.9541x      | 262,144    |   3.16         |   1.00x     
+Throughput Balancer (AT-BLC)   |    13.5802 |   3.66%        | 0.9559x      | 262,144    |   3.16         |   1.00x     
+================================================================================================================
+
+
+
+--------------------------------------------------------------------------------
+4. COMPLETE FILE MANIFEST (CREATED & MODIFIED FILES FOR GIT DIFF / REPOS)
+--------------------------------------------------------------------------------
+Note for Git commit/diff: The following files contain our functional changes
+and new implementations across both repositories and the workspace root.
+
+================================================================================
+A. RAMULATOR REPOSITORY (`c:\Users\purushottam\Desktop\memory_project\ramulator`)
+================================================================================
+-- NEWLY CREATED FILES & SCRIPTS --
+1. ramulator/src/LPDDR5.h
+   - JEDEC-compliant LPDDR5 DRAM architecture definition (3200 MHz, tCK=0.3125ns,
+     16 banks, 4 bank groups, BL16, 2 KB row size, complete timing matrix).
+2. ramulator/src/LPDDR5.cpp
+   - Timing parameter specifications and command constraint lookups for LPDDR5.
+3. ramulator/configs/LPDDR5-PIM.cfg
+   - Base configuration for 16-core, 4-channel LPDDR5-6400 PIM simulations.
+4. ramulator/evaluate_policies.py
+   - Comprehensive automated experiment runner for Baseline and 4 scheduling policies.
+5. ramulator/print_detailed_metrics.py
+   - Deep-dive statistics parser reporting per-channel breakdowns, row hit/conflict rates.
+6. ramulator/cputraces/16core_traces/
+   - Directory containing 16 uncompressed SPEC CPU2006 benchmark traces.
+
+-- MODIFIED EXISTING FILES --
+1. ramulator/Makefile
+   - Added `obj/LPDDR5.o` to build target dependencies.
+2. ramulator/src/Request.h
+   - Added `bool is_pim`, `uint8_t optype`, and `int batch_id` fields.
+3. ramulator/src/Controller.h
+   - Added dedicated 2-entry `pim_q` queue (`pim_q.max = 2`).
+   - Added embedded `PIMRequestGenerator` struct (32-entry macro-request buffer,
+     4 KB channel data buffer, automated GEMV request stream injection).
+   - Added `warmup_complete` gating so PIM micro-requests execute during active measurement.
+   - Implemented three scheduling algorithms:
+       * `FR_FCFS`: row-hit priority across host and PIM.
+       * `BATCH`: PAR-BS batching (size 64) with intra-batch FR-FCFS.
+       * `THROUGHPUT_BALANCER`: ST-BLC (P=64, N=64 alternating turns with PREA
+         row-conflict latency hiding) + AT-BLC (dynamic N in [16, 128] per tREFI).
+   - Added PIM and host statistics tracking (requests served, bytes, row hits/conflicts).
+4. ramulator/src/Memory.h
+   - Updated `pending_requests()` to include `ctrl->pim_q.size()`.
+5. ramulator/src/Processor.cpp
+   - Added whitespace and Windows `\r` (CRLF) trimming to trace parser to prevent stoul failures.
+6. ramulator/src/Main.cpp
+   - Included `LPDDR5.h` and registered standard parser for `LPDDR5`.
+7. ramulator/src/MemoryFactory.cpp
+   - Added `MemoryFactory<LPDDR5>::validate()` specialization.
+8. ramulator/src/Config.cpp
+   - Config file parser validation helper.
+9. ramulator/src/StatType.h
+   - Helper fixes for stat printing.
+
+
+================================================================================
+B. SAMSUNG PIMSIMULATOR REPOSITORY (`c:\Users\purushottam\Desktop\memory_project\PIMSimulator`)
+================================================================================
+-- NEWLY CREATED DATASET ARTIFACTS --
+1. PIMSimulator/data/gemv/gemv_input_4096x4096.npy   - FP16 input vector (4096)
+2. PIMSimulator/data/gemv/gemv_weight_4096x4096.npy  - FP16 weight matrix (4096x4096)
+3. PIMSimulator/data/gemv/gemv_output_4096x4096.npy  - Golden reference result (4096)
+4. PIMSimulator/data/mul/eltmul_input0_2097152.npy   - FP16 input vector 0 (2,097,152)
+5. PIMSimulator/data/mul/eltmul_input1_2097152.npy   - FP16 input vector 1 (2,097,152)
+6. PIMSimulator/data/mul/eltmul_output_2097152.npy   - Golden reference result (2,097,152)
+7. PIMSimulator/data/relu/relu_input_4194304.npy     - FP16 input vector (4,194,304)
+8. PIMSimulator/data/relu/relu_output_4194304.npy    - Golden reference result (4,194,304)
+
+-- MODIFIED EXISTING FILES (FUNCTIONAL CODE CHANGES) --
+1.  PIMSimulator/src/BusPacket.h
+    - Added `PIM_ACT` to `BusPacketType` enum.
+    - Added packet fields `bool isPIM` and `uint8_t optype` with getters/setters.
+2.  PIMSimulator/src/BusPacket.cpp
+    - Added `PIM_ACT` string conversion.
+    - Fixed constructor bug: added `bank(b)` into member initialization list.
+3.  PIMSimulator/src/PIMCmd.h
+    - Implemented 64 optypes (0-31 compute, 32-63 transfer) and opcode helper queries.
+4.  PIMSimulator/src/PIMRank.h
+    - Declared `doPIMACT(unsigned bank, unsigned row, uint8_t optype)` method.
+5.  PIMSimulator/src/PIMRank.cpp
+    - Implemented `doPIMACT()` for multi-bank SIMD FP16 compute across all banks.
+6.  PIMSimulator/src/Rank.h & PIMSimulator/src/Rank.cpp
+    - Multi-bank activation state transitions and rank-wide PRECHARGE in pimActMode.
+7.  PIMSimulator/src/MemoryController.h & PIMSimulator/src/MemoryController.cpp
+    - Memory controller command generation, multi-bank PIM_ACT dispatch & PRECHARGE.
+8.  PIMSimulator/src/CommandQueue.h & PIMSimulator/src/CommandQueue.cpp
+    - Updated `isIssuable()` to enforce all-bank Idle and tActivate constraints for PIM_ACT.
+9.  PIMSimulator/src/MemorySystem.h & PIMSimulator/src/MemorySystem.cpp
+    - Exposed PIM_ACT access methods in public memory system interface.
+10. PIMSimulator/src/MultiChannelMemorySystem.h & PIMSimulator/src/MultiChannelMemorySystem.cpp
+    - Added multi-channel dispatch routing for PIM_ACT.
+11. PIMSimulator/src/Transaction.h & PIMSimulator/src/Transaction.cpp
+    - Added PIM transaction types and routing flags.
+12. PIMSimulator/src/ParameterReader.h & PIMSimulator/lib/npy.h
+    - Minor header fixes for C++11 compatibility.
+13. PIMSimulator/src/tests/PIMKernel.h & PIMSimulator/src/tests/PIMKernel.cpp
+    - Implemented kernel drivers for GEMV, ADD, MUL, and ReLU with PIM-ACT commands.
+14. PIMSimulator/src/tests/KernelTestCases.h & PIMSimulator/src/tests/KernelTestCases.cpp
+    - Added Google Test verification suite comparing simulator outputs against golden files.
+
+
+================================================================================
+C. WORKSPACE ROOT (`c:\Users\purushottam\Desktop\memory_project`)
+================================================================================
+1. PROJECT_PROGRESS_AND_TODO.txt
+   - Master log tracking architecture specs, verification logs, to-do roadmap,
+     and file manifests for git differentiation.
+================================================================================
+
