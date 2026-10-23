@@ -1,0 +1,18 @@
+Note: Google Test filter = PIMKernelFixture.relu_pim_act
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from PIMKernelFixture
+[ RUN      ] PIMKernelFixture.relu_pim_act
+>>PIM Kernel Accuraccy Test
+  Input/output data dimension : 4194304
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 4194304
+> failed : 0
+[       OK ] PIMKernelFixture.relu_pim_act (11934 ms)
+[----------] 1 test from PIMKernelFixture (11934 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (11935 ms total)
+[  PASSED  ] 1 test.

@@ -68,7 +68,7 @@ class Rank : public SimulatorObject
     void sendToBank(BusPacket* packet);
 
     void checkBank(BusPacketType type, int bank, int row);
-    void updateBank(BusPacketType type, int bank, int row, bool targetBank, bool targetBankgroup);
+    void updateBank(BusPacketType type, int bank, int row, bool targetBank, bool targetBankgroup, uint8_t optype = 0);
     void attachMemoryController(MemoryController* mc);
     int getChanId() const;
     void setChanId(int id);

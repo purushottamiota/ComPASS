@@ -63,6 +63,9 @@ extern bool VIS_FILE_OUTPUT;
 extern bool PRINT_CHAN_STAT;
 extern bool DEBUG_PIM_TIME;
 extern bool DEBUG_CMD_TRACE;
+extern bool AAO_ENABLED;
+extern bool PIM_ACT_PROTOCOL;
+
 extern bool DEBUG_PIM_BLOCK;
 
 extern std::string SIM_TRACE_FILE;

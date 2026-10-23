@@ -239,19 +239,19 @@ void Rank::updateState(BusPacket* packet)
         for (int bank = 0; bank < config.NUM_BANKS; bank++)
         {
             updateBank(packet->busPacketType, bank, packet->row, bank == packet->bank,
-                       addrMapping.isSameBankgroup(bank, packet->bank));
+                       addrMapping.isSameBankgroup(bank, packet->bank), packet->optype);
         }
     }
     else
     {
         for (int bank = 0; bank < config.NUM_BANKS; bank++)
         {
-            updateBank(packet->busPacketType, bank, packet->row, (bank % 2) == packet->bank, true);
+            updateBank(packet->busPacketType, bank, packet->row, (bank % 2) == packet->bank, true, packet->optype);
         }
     }
 }
 
-void Rank::updateBank(BusPacketType type, int bank, int row, bool targetBank, bool targetBankgroup)
+void Rank::updateBank(BusPacketType type, int bank, int row, bool targetBank, bool targetBankgroup, uint8_t optype)
 {
     switch (type)
     {
@@ -322,21 +322,37 @@ void Rank::updateBank(BusPacketType type, int bank, int row, bool targetBank, bo
         case PIM_ACT:
             if (targetBank)
             {
+                uint64_t tRCD_val = (config.tRCDRD - config.AL) + 1;
+                uint64_t tRAS_val = config.tRAS + 1;
+                uint64_t tRC_val  = config.tRC + 1;
+
+                if (AAO_ENABLED && isAAORegisterOp(optype))
+                {
+                    tRCD_val = max((uint64_t)2, (uint64_t)(config.tRCDRD / 2));
+                    tRAS_val = max((uint64_t)4, (uint64_t)((config.tRAS * 6) / 10));
+                    tRC_val  = max((uint64_t)6, (uint64_t)((config.tRC * 6) / 10));
+                }
+
                 bankStates[bank].currentBankState = RowActive;
-                bankStates[bank].nextActivate = currentClockCycle + config.tRC;
+                bankStates[bank].nextActivate = currentClockCycle + tRC_val;
                 bankStates[bank].openRowAddress = row;
-                bankStates[bank].nextWrite = currentClockCycle + (config.tRCDWR - config.AL) + 1;
-                bankStates[bank].nextRead = currentClockCycle + (config.tRCDRD - config.AL) + 1;
-                bankStates[bank].nextPrecharge = currentClockCycle + config.tRAS;
+                bankStates[bank].nextWrite = currentClockCycle + tRCD_val;
+                bankStates[bank].nextRead = currentClockCycle + tRCD_val;
+                bankStates[bank].nextPrecharge = currentClockCycle + tRAS_val;
             }
             break;
 
         case PRECHARGE:
             if (targetBank)
             {
+                uint64_t tRP_val = config.tRP;
+                if (AAO_ENABLED && isAAORegisterOp(optype))
+                {
+                    tRP_val = max((uint64_t)2, (uint64_t)(config.tRP / 2));
+                }
                 bankStates[bank].currentBankState = Idle;
                 bankStates[bank].nextActivate =
-                    max(bankStates[bank].nextActivate, currentClockCycle + config.tRP);
+                    max(bankStates[bank].nextActivate, currentClockCycle + tRP_val);
             }
             break;
 

@@ -1,0 +1,7 @@
+Policy,Key,Host_IPC,Host_Slowdown_Pct,Weighted_Speedup,PIM_Requests,PIM_BW_GBps,PIM_Speedup,PREA_Commands,QoS_Metric,Ch_BW_StdDev,Total_Cycles
+Baseline (Host Standalone),baseline,14.0967,0.00,1.0000,0,0.000,0.00,2547,0.0000,0.0000,7985629
+FR-FCFS (Shared Queue),frfcfs,13.3931,4.99,0.9470,262144,3.130,1.00,116652,0.5829,0.0000,8577284
+"Batch (PAR-BS, batch=64)",batch,13.4018,4.93,0.9478,262144,3.126,1.00,117025,0.5822,0.0000,8587814
+Throughput Balancer (ST-BLC),stblc,13.5636,3.78,0.9541,262144,3.162,1.01,152665,0.5890,0.0000,8489222
+Throughput Balancer (AT-BLC),atblc,13.6055,3.49,0.9565,262144,3.124,1.00,150952,0.5818,0.0000,8593421
+"Elastic Balancer (E-BLC, Novel)",eblc,13.5623,3.79,0.9513,262144,3.140,1.00,151951,0.5849,0.0000,8547925

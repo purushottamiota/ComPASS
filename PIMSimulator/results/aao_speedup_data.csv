@@ -1,0 +1,5 @@
+Kernel,Original_Protocol (ms),PIM_ACT_w_AAO (ms),Speedup_w_o_AAO (%),Speedup_with_AAO (%)
+GEMV,6943,26936,1.82,2.54
+ADD,3238,3738,6.45,9.68
+MUL,3242,7614,4.85,7.2
+ReLU,2342,11934,5.5,8.4

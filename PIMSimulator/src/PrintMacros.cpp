@@ -28,4 +28,7 @@ bool PRINT_CHAN_STAT;
 bool VERIFICATION_OUTPUT;
 bool LOG_OUTPUT;
 
+bool AAO_ENABLED = true;
+bool PIM_ACT_PROTOCOL = true;
+
 std::string SIM_TRACE_FILE;

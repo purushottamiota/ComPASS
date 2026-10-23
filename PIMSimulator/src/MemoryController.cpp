@@ -268,24 +268,42 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
             break;
 
         case PIM_ACT:
+        {
+            uint64_t tRCD_val = (config.tRCDRD - config.AL) + 1;
+            uint64_t tRAS_val = config.tRAS + 1;
+            uint64_t tRC_val  = config.tRC + 1;
+
+            if (AAO_ENABLED && isAAORegisterOp(poppedBusPacket->optype))
+            {
+                tRCD_val = max((uint64_t)2, (uint64_t)(config.tRCDRD / 2));
+                tRAS_val = max((uint64_t)4, (uint64_t)((config.tRAS * 6) / 10));
+                tRC_val  = max((uint64_t)6, (uint64_t)((config.tRC * 6) / 10));
+            }
+
             for (size_t b = 0; b < config.NUM_BANKS; b++)
             {
                 setBankStates(rank, b, RowActive, PIM_ACT, 0,
-                              max(currentClockCycle + config.tRC, bankStates[rank][b].nextActivate));
+                              max(currentClockCycle + tRC_val, bankStates[rank][b].nextActivate));
                 bankStates[rank][b].openRowAddress = poppedBusPacket->row;
                 bankStates[rank][b].nextPrecharge =
-                    max(currentClockCycle + config.tRAS, bankStates[rank][b].nextPrecharge);
-                setBankStatesRW(rank, b, (config.tRCDRD - config.AL) + 1, (config.tRCDWR - config.AL) + 1);
+                    max(currentClockCycle + tRAS_val, bankStates[rank][b].nextPrecharge);
+                setBankStatesRW(rank, b, tRCD_val, tRCD_val);
             }
             break;
+        }
 
         case PRECHARGE:
             if ((*ranks)[rank]->pimRank->isPIMACTMode())
             {
+                uint64_t tRP_val = config.tRP;
+                if (AAO_ENABLED && isAAORegisterOp(poppedBusPacket->optype))
+                {
+                    tRP_val = max((uint64_t)2, (uint64_t)(config.tRP / 2));
+                }
                 for (size_t b = 0; b < config.NUM_BANKS; b++)
                 {
-                    setBankStates(rank, b, Precharging, PRECHARGE, config.tRP,
-                                  max(currentClockCycle + config.tRP, bankStates[rank][b].nextActivate));
+                    setBankStates(rank, b, Precharging, PRECHARGE, tRP_val,
+                                  max(currentClockCycle + tRP_val, bankStates[rank][b].nextActivate));
                 }
             }
             else

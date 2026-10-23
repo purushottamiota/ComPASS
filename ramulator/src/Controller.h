@@ -103,8 +103,10 @@ public:
         FR_FCFS,
         BATCH,
         ST_BLC,
-        AT_BLC
+        AT_BLC,
+        E_BLC
     } policy_type = PolicyType::FR_FCFS;
+
 
     struct PIMMacroRequest {
         long id = 0;
@@ -234,7 +236,15 @@ public:
     int current_batch_id = 0;
     int batch_remaining = 0;
 
-    // Throughput Balancer state (ST-BLC / AT-BLC)
+
+
+    ScalarStat prea_count;
+    bool last_was_pim = false;
+    long epoch_host_served = 0;
+    double blc_lambda = 0.01;
+    vector<pair<long, int>> N_timeline;
+    int eblc_elastic_quota = 0;
+
     bool tb_pim_turn = true;
     int consecutive_pim = 0;
     int consecutive_host = 0;
@@ -248,6 +258,8 @@ public:
     long total_pim_work = 65536;
     long last_ref_epoch = 0;
     long ref_interval = 12480; // tREFI
+
+
 
     bool find_best_req(Queue* queue, list<Request>::iterator& out_req, typename T::Command& out_cmd) {
         if (!queue || queue->q.empty()) return false;
@@ -506,6 +518,11 @@ public:
             .desc("Total host requests served per channel")
             .precision(0)
             ;
+        prea_count
+            .name("prea_count_" + to_string(channel->id))
+            .desc("Total PREA commands issued per channel")
+            .precision(0)
+            ;
 
         readq.max = 64;
         writeq.max = 64;
@@ -519,8 +536,14 @@ public:
             policy_type = PolicyType::ST_BLC;
         } else if (pol_str == "AT_BLC" || pol_str == "at_blc" || pol_str == "AT-BLC") {
             policy_type = PolicyType::AT_BLC;
+        } else if (pol_str == "E_BLC" || pol_str == "e_blc" || pol_str == "E-BLC" || pol_str == "eblc") {
+            policy_type = PolicyType::E_BLC;
         } else {
             policy_type = PolicyType::FR_FCFS;
+        }
+
+        if (configs["blc_lambda"] != "") {
+            blc_lambda = stod(configs["blc_lambda"]);
         }
 
         if (pim_enabled) {
@@ -551,6 +574,17 @@ public:
       req_queue_length_avg = req_queue_length_sum.value() / dram_cycles;
       read_req_queue_length_avg = read_req_queue_length_sum.value() / dram_cycles;
       write_req_queue_length_avg = write_req_queue_length_sum.value() / dram_cycles;
+      if (!N_timeline.empty()) {
+          string fname = "results/atblc_N_timeline_ch" + to_string(channel->id) + ".csv";
+          ofstream n_out(fname);
+          if (n_out.is_open()) {
+              n_out << "cycle,N_limit\n";
+              for (auto& p : N_timeline) {
+                  n_out << p.first << "," << p.second << "\n";
+              }
+              n_out.close();
+          }
+      }
       // call finish function of each channel
       channel->finish(dram_cycles);
     }
@@ -559,8 +593,10 @@ public:
     Queue& get_queue(Request::Type type)
     {
         switch (int(type)) {
-            case int(Request::Type::READ): return readq;
-            case int(Request::Type::WRITE): return writeq;
+            case int(Request::Type::READ):
+            case int(Request::Type::PIM_READ): return readq;
+            case int(Request::Type::WRITE):
+            case int(Request::Type::PIM_WRITE): return writeq;
             default: return otherq;
         }
     }
@@ -592,9 +628,24 @@ public:
         write_req_queue_length_sum += writeq.size();
 
         /*** 0. PIM request generator ***/
-        if (pim_enabled && warmup_complete && pim_q.size() < pim_q.max && pim_gen.can_issue_micro()) {
-            Request preq = pim_gen.generate_micro_request(clk);
-            pim_q.q.push_back(preq);
+        if (pim_enabled && warmup_complete && pim_gen.can_issue_micro()) {
+            if (policy_type == PolicyType::FR_FCFS || policy_type == PolicyType::BATCH) {
+                // Shared queue per paper specification: PIM enters readq directly
+                if (readq.size() < readq.max) {
+                    Request preq = pim_gen.generate_micro_request(clk);
+                    preq.type = Request::Type::PIM_READ;
+                    preq.arrive = clk;
+                    readq.q.push_back(preq);
+                }
+            } else {
+                // Dedicated pim_q for Balancers (ST_BLC, AT_BLC, E_BLC)
+                if (pim_q.size() < pim_q.max) {
+                    Request preq = pim_gen.generate_micro_request(clk);
+                    preq.type = Request::Type::PIM_READ;
+                    preq.arrive = clk;
+                    pim_q.q.push_back(preq);
+                }
+            }
         }
 
         /*** 1. Serve completed reads ***/
@@ -606,7 +657,7 @@ public:
                   channel->update_serving_requests(
                       req.addr_vec.data(), -1, clk);
                 }
-                if (req.is_pim) {
+                if (req.is_pim_req()) {
                     pim_requests_served++;
                     pim_gen.pim_work_completed++;
                 }
@@ -618,17 +669,22 @@ public:
         /*** 2. Refresh scheduler & AT-BLC epoch ***/
         refresh->tick_ref();
 
-        if (policy_type == PolicyType::AT_BLC && clk - last_ref_epoch >= ref_interval) {
+        if ((policy_type == PolicyType::AT_BLC || policy_type == PolicyType::E_BLC) && clk - last_ref_epoch >= ref_interval) {
             last_ref_epoch = clk;
             if (clk > 0 && effective_target_T > 0 && total_pim_work > 0) {
                 double expected_rate = (double)total_pim_work / (double)effective_target_T;
                 double current_rate = (double)pim_gen.pim_work_completed / (double)clk;
                 double delta = (current_rate - expected_rate) / expected_rate;
-                if (delta > 0.0) {
+
+                double host_util = (double)epoch_host_served / (double)max(1L, (long)N_limit);
+                epoch_host_served = 0;
+
+                if (delta > blc_lambda && host_util > 0.50) {
                     N_limit = min(N_max, N_limit + blc_step);
-                } else {
+                } else if (delta < -blc_lambda) {
                     N_limit = max(N_min, N_limit - blc_step);
                 }
+                N_timeline.push_back(make_pair(clk, N_limit));
             }
         }
 
@@ -679,45 +735,18 @@ public:
             Queue* hostq = !write_mode ? &readq : &writeq;
 
             if (policy_type == PolicyType::FR_FCFS) {
-                // Baseline FR-FCFS: strictly prioritize row hits across host and PIM
-                list<Request>::iterator host_req, pim_req;
-                typename T::Command host_cmd, pim_cmd;
-                bool have_host = find_best_req(hostq, host_req, host_cmd);
-                bool have_pim = pim_enabled && find_best_req(&pim_q, pim_req, pim_cmd);
-
-                if (have_host && have_pim) {
-                    bool host_hit = is_row_hit(host_req);
-                    bool pim_hit = is_row_hit(pim_req);
-                    if (pim_hit && !host_hit) {
-                        queue = &pim_q; req = pim_req; cmd = pim_cmd; is_valid_req = true;
-                    } else if (host_hit && !pim_hit) {
-                        queue = hostq; req = host_req; cmd = host_cmd; is_valid_req = true;
-                    } else {
-                        // Both hits or both misses: oldest arrival first
-                        if (pim_req->arrive <= host_req->arrive) {
-                            queue = &pim_q; req = pim_req; cmd = pim_cmd; is_valid_req = true;
-                        } else {
-                            queue = hostq; req = host_req; cmd = host_cmd; is_valid_req = true;
-                        }
-                    }
-                } else if (have_pim) {
-                    queue = &pim_q; req = pim_req; cmd = pim_cmd; is_valid_req = true;
-                } else if (have_host) {
-                    queue = hostq; req = host_req; cmd = host_cmd; is_valid_req = true;
+                // Shared queue FR-FCFS (prioritizes row hits across host and PIM)
+                list<Request>::iterator best_r;
+                typename T::Command best_c;
+                if (find_best_req(hostq, best_r, best_c)) {
+                    queue = hostq; req = best_r; cmd = best_c; is_valid_req = true;
                 }
             }
             else if (policy_type == PolicyType::BATCH) {
-                // Batch (PAR-BS): default batch size 64
+                // Batch (PAR-BS): default batch size 64 over shared queue
                 if (batch_remaining <= 0) {
                     current_batch_id++;
                     batch_remaining = 0;
-                    if (pim_enabled) {
-                        for (auto& r : pim_q.q) {
-                            if (batch_remaining >= batch_size) break;
-                            r.batch_id = current_batch_id;
-                            batch_remaining++;
-                        }
-                    }
                     for (auto& r : hostq->q) {
                         if (batch_remaining >= batch_size) break;
                         r.batch_id = current_batch_id;
@@ -726,47 +755,84 @@ public:
                 }
 
                 // Look for ready requests with r.batch_id == current_batch_id
-                list<Request>::iterator best_batch_req;
+                list<Request>::iterator best_batch_req = hostq->q.end();
                 typename T::Command best_batch_cmd;
-                Queue* best_batch_q = nullptr;
                 bool best_is_hit = false;
 
-                auto check_batch_in_q = [&](Queue* q) {
-                    for (auto it = q->q.begin(); it != q->q.end(); ++it) {
-                        if (it->batch_id == current_batch_id) {
-                            typename T::Command c = get_first_cmd(it);
-                            if (is_ready(c, it->addr_vec)) {
-                                bool hit = is_row_hit(it);
-                                if (!best_batch_q || (hit && !best_is_hit) || ((hit == best_is_hit) && it->arrive < best_batch_req->arrive)) {
-                                    best_batch_q = q;
-                                    best_batch_req = it;
-                                    best_batch_cmd = c;
-                                    best_is_hit = hit;
-                                }
+                for (auto it = hostq->q.begin(); it != hostq->q.end(); ++it) {
+                    if (it->batch_id == current_batch_id) {
+                        typename T::Command c = get_first_cmd(it);
+                        if (is_ready(c, it->addr_vec)) {
+                            bool hit = is_row_hit(it);
+                            if (best_batch_req == hostq->q.end() || (hit && !best_is_hit) || ((hit == best_is_hit) && it->arrive < best_batch_req->arrive)) {
+                                best_batch_req = it;
+                                best_batch_cmd = c;
+                                best_is_hit = hit;
                             }
                         }
                     }
-                };
+                }
 
-                if (pim_enabled) check_batch_in_q(&pim_q);
-                check_batch_in_q(hostq);
-
-                if (best_batch_q) {
-                    queue = best_batch_q;
+                if (best_batch_req != hostq->q.end()) {
+                    queue = hostq;
                     req = best_batch_req;
                     cmd = best_batch_cmd;
                     is_valid_req = true;
                 } else {
-                    // Fallback to any ready request if batch requests are blocked on timing
-                    list<Request>::iterator host_req, pim_req;
-                    typename T::Command host_cmd, pim_cmd;
-                    bool have_host = find_best_req(hostq, host_req, host_cmd);
-                    bool have_pim = pim_enabled && find_best_req(&pim_q, pim_req, pim_cmd);
-                    if (have_pim) {
-                        queue = &pim_q; req = pim_req; cmd = pim_cmd; is_valid_req = true;
-                    } else if (have_host) {
-                        queue = hostq; req = host_req; cmd = host_cmd; is_valid_req = true;
+                    // Fallback to any ready request
+                    list<Request>::iterator best_r;
+                    typename T::Command best_c;
+                    if (find_best_req(hostq, best_r, best_c)) {
+                        queue = hostq; req = best_r; cmd = best_c; is_valid_req = true;
                     }
+                }
+            }
+            else if (policy_type == PolicyType::E_BLC) {
+                // Novel Contribution: Elastic Bank-Conflict Aware Balancer (E-BLC)
+                list<Request>::iterator host_req, pim_req;
+                typename T::Command host_cmd, pim_cmd;
+                bool have_host = find_best_req(hostq, host_req, host_cmd);
+                bool have_pim = pim_enabled && find_best_req(&pim_q, pim_req, pim_cmd);
+
+                if (have_pim && have_host) {
+                    int pim_bg = pim_req->addr_vec[int(T::Level::Bank)] / 4;
+                    int host_bg = host_req->addr_vec[int(T::Level::Bank)] / 4;
+                    bool host_hit = is_row_hit(host_req);
+                    bool pim_hit = is_row_hit(pim_req);
+
+                    if (pim_bg != host_bg && host_hit && !pim_hit) {
+                        // Exploit Bank-Level Parallelism (BLP): schedule host without PREA penalty
+                        queue = hostq; req = host_req; cmd = host_cmd; is_valid_req = true;
+                        consecutive_host++;
+                    } else if (tb_pim_turn) {
+                        if (!pim_hit && host_hit) {
+                            // Elastic quota lending: PIM lends turn slot to host
+                            queue = hostq; req = host_req; cmd = host_cmd; is_valid_req = true;
+                            consecutive_host++;
+                            eblc_elastic_quota++;
+                        } else {
+                            queue = &pim_q; req = pim_req; cmd = pim_cmd; is_valid_req = true;
+                            consecutive_pim++;
+                        }
+                    } else {
+                        queue = hostq; req = host_req; cmd = host_cmd; is_valid_req = true;
+                        consecutive_host++;
+                    }
+                } else if (have_pim) {
+                    queue = &pim_q; req = pim_req; cmd = pim_cmd; is_valid_req = true;
+                    consecutive_pim++;
+                } else if (have_host) {
+                    queue = hostq; req = host_req; cmd = host_cmd; is_valid_req = true;
+                    consecutive_host++;
+                }
+
+                if (tb_pim_turn && (consecutive_pim >= P_limit || pim_q.q.empty())) {
+                    tb_pim_turn = false;
+                    consecutive_host = 0;
+                } else if (!tb_pim_turn && (consecutive_host >= (N_limit + eblc_elastic_quota) || hostq->q.empty())) {
+                    tb_pim_turn = true;
+                    consecutive_pim = 0;
+                    eblc_elastic_quota = 0;
                 }
             }
             else { // ST_BLC or AT_BLC (Throughput Balancer)
@@ -818,6 +884,7 @@ public:
             }
         }
 
+
         if (!is_valid_req) {
             // we couldn't find a command to schedule -- let's try to be speculative
             auto scmd = T::Command::PRE;
@@ -831,11 +898,12 @@ public:
         if (req->is_first_command) {
             req->is_first_command = false;
             int coreid = req->coreid;
-            if (req->type == Request::Type::READ || req->type == Request::Type::WRITE) {
+            if (req->type == Request::Type::READ || req->type == Request::Type::WRITE ||
+                req->type == Request::Type::PIM_READ || req->type == Request::Type::PIM_WRITE) {
               channel->update_serving_requests(req->addr_vec.data(), 1, clk);
             }
             int tx = (channel->spec->prefetch_size * channel->spec->channel_width / 8);
-            if (req->is_pim) {
+            if (req->is_pim_req()) {
                 pim_transaction_bytes += tx;
                 if (is_row_hit(req)) {
                     ++pim_row_hits;
@@ -848,6 +916,7 @@ public:
                     ++row_misses;
                 }
             } else if (req->type == Request::Type::READ) {
+                epoch_host_served++;
                 if (coreid >= 0) {
                     if (is_row_hit(req)) {
                         ++read_row_hits[coreid];
@@ -863,6 +932,7 @@ public:
                 read_transaction_bytes += tx;
                 host_requests_served++;
             } else if (req->type == Request::Type::WRITE) {
+                epoch_host_served++;
                 if (coreid >= 0) {
                     if (is_row_hit(req)) {
                         ++write_row_hits[coreid];
@@ -882,6 +952,14 @@ public:
 
         // issue command on behalf of request
         issue_cmd(cmd, get_addr_vec(cmd, req));
+        if (channel->spec->is_closing(cmd) && (req->is_pim_req() || channel->spec->scope[int(cmd)] == T::Level::Rank)) {
+            prea_count++;
+        }
+        bool current_is_pim = req->is_pim_req();
+        if (last_was_pim != current_is_pim) {
+            prea_count++;
+            last_was_pim = current_is_pim;
+        }
 
         // check whether this is the last command (which finishes the request)
         if (cmd != channel->spec->translate[int(req->type)]) {
@@ -895,15 +973,16 @@ public:
         }
 
         // set a future completion time for read requests
-        if (req->type == Request::Type::READ) {
+        if (req->type == Request::Type::READ || req->type == Request::Type::PIM_READ) {
             req->depart = clk + channel->spec->read_latency;
             pending.push_back(*req);
         }
 
-        if (req->type == Request::Type::WRITE) {
+        if (req->type == Request::Type::WRITE || req->type == Request::Type::PIM_WRITE) {
             channel->update_serving_requests(req->addr_vec.data(), -1, clk);
             // req->callback(*req);
         }
+
 
         if (policy_type == PolicyType::BATCH && req->batch_id == current_batch_id) {
             batch_remaining--;

@@ -110,7 +110,10 @@ public:
     /* Translate */
     Command translate[int(Request::Type::MAX)] = {
         Command::RD,  Command::WR,
-        Command::REF, Command::PDE, Command::SREF
+        Command::REF, Command::PDE, Command::SREF,
+        Command::RD,  // EXTENSION
+        Command::RD,  // PIM_READ
+        Command::WR   // PIM_WRITE
     };
 
     function<Command(DRAM<LPDDR5>*, Command cmd, int)> prereq[int(Level::MAX)][int(Command::MAX)];

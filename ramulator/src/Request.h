@@ -31,8 +31,12 @@ public:
         POWERDOWN,
         SELFREFRESH,
         EXTENSION,
+        PIM_READ,
+        PIM_WRITE,
         MAX
     } type;
+
+    bool is_pim_req() const { return is_pim || type == Type::PIM_READ || type == Type::PIM_WRITE; }
 
     long arrive = -1;
     long depart = -1;
