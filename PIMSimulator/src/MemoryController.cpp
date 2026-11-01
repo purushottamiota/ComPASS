@@ -29,6 +29,7 @@
  *********************************************************************************/
 
 #include "MemoryController.h"
+#include "PimActTiming.h"
 
 #include <iostream>
 #include <map>
@@ -329,25 +330,16 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
             {
                 g_rowOptype[rank] = poppedBusPacket->optype;
             }
-            uint64_t tRCD_val = (config.tRCDRD - config.AL) + 1;
-            uint64_t tRAS_val = config.tRAS;
-            uint64_t tRC_val  = config.tRC;
-
-            if (AAO_ENABLED && isAAORegisterOp(poppedBusPacket->optype))
-            {
-                tRCD_val = max((uint64_t)2, (uint64_t)(config.tRCDRD / 2));
-                tRAS_val = max((uint64_t)4, (uint64_t)((config.tRAS * 6) / 10));
-                tRC_val  = max((uint64_t)6, (uint64_t)((config.tRC * 6) / 10));
-            }
+            auto timing = pimActTiming(config, poppedBusPacket->optype, AAO_ENABLED);
 
             for (size_t b = 0; b < config.NUM_BANKS; b++)
             {
                 setBankStates(rank, b, RowActive, PIM_ACT, 0,
-                              max(currentClockCycle + tRC_val, bankStates[rank][b].nextActivate));
+                              max(currentClockCycle + timing.tRC, bankStates[rank][b].nextActivate));
                 bankStates[rank][b].openRowAddress = poppedBusPacket->row;
                 bankStates[rank][b].nextPrecharge =
-                    max(currentClockCycle + tRAS_val, bankStates[rank][b].nextPrecharge);
-                setBankStatesRW(rank, b, tRCD_val, tRCD_val);
+                    max(currentClockCycle + timing.tRAS, bankStates[rank][b].nextPrecharge);
+                setBankStatesRW(rank, b, timing.tRCD, timing.tRCDW);
             }
             break;
         }
@@ -356,11 +348,8 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
             g_numPrecharge++;
             if ((*ranks)[rank]->pimRank->isPIMACTMode())
             {
-                uint64_t tRP_val = config.tRP;
-                if (AAO_ENABLED && isAAORegisterOp(poppedBusPacket->optype))
-                {
-                    tRP_val = max((uint64_t)2, (uint64_t)(config.tRP / 2));
-                }
+                uint8_t activeOpt = (*ranks)[rank]->pimRank->getActiveOptype();
+                uint64_t tRP_val = pimPrechargeTiming(config, activeOpt, AAO_ENABLED);
                 for (size_t b = 0; b < config.NUM_BANKS; b++)
                 {
                     setBankStates(rank, b, Precharging, PRECHARGE, tRP_val,
@@ -372,6 +361,7 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
                 setBankStates(rank, bank, Precharging, PRECHARGE, config.tRP,
                               max(currentClockCycle + config.tRP, bankStates[rank][bank].nextActivate));
             }
+            if (rank < 64) g_rowOptype[rank] = 0xFF;
             break;
 
         case REF:
