@@ -29,6 +29,10 @@ bool VERIFICATION_OUTPUT;
 bool LOG_OUTPUT;
 
 bool AAO_ENABLED = true;
+float AAO_TRCD_FACTOR = 0.5f;
+float AAO_TRAS_FACTOR = 0.6f;
+float AAO_TRC_FACTOR  = 0.6f;
+float AAO_TRP_FACTOR  = 0.5f;
 // NOTE (A4): PIM_ACT_PROTOCOL was a dead flag -- never read anywhere in the
 // codebase. Protocol dispatch is determined entirely by the kernel test calls
 // (getResultPIM vs getResultPIMACT). Removed to avoid confusion.

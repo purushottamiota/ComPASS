@@ -28,6 +28,10 @@ using namespace std;
 // A2: AAO_ENABLED is defined in PrintMacros.cpp. Expose it here so the
 // runtime env-var switch can override the compiled default (true).
 extern bool AAO_ENABLED;
+extern float AAO_TRCD_FACTOR;
+extern float AAO_TRAS_FACTOR;
+extern float AAO_TRC_FACTOR;
+extern float AAO_TRP_FACTOR;
 
 int main(int argc, char* argv[])
 {
@@ -39,6 +43,26 @@ int main(int argc, char* argv[])
     {
         AAO_ENABLED = (atoi(v) != 0);
         std::cerr << "== [ComPASS Config] AAO_ENABLED set to " << AAO_ENABLED << std::endl;
+    }
+    if (const char* v = getenv("AAO_TRCD"))
+    {
+        AAO_TRCD_FACTOR = atof(v);
+        std::cerr << "== [ComPASS Config] AAO_TRCD_FACTOR set to " << AAO_TRCD_FACTOR << std::endl;
+    }
+    if (const char* v = getenv("AAO_TRAS"))
+    {
+        AAO_TRAS_FACTOR = atof(v);
+        std::cerr << "== [ComPASS Config] AAO_TRAS_FACTOR set to " << AAO_TRAS_FACTOR << std::endl;
+    }
+    if (const char* v = getenv("AAO_TRC"))
+    {
+        AAO_TRC_FACTOR = atof(v);
+        std::cerr << "== [ComPASS Config] AAO_TRC_FACTOR set to " << AAO_TRC_FACTOR << std::endl;
+    }
+    if (const char* v = getenv("AAO_TRP"))
+    {
+        AAO_TRP_FACTOR = atof(v);
+        std::cerr << "== [ComPASS Config] AAO_TRP_FACTOR set to " << AAO_TRP_FACTOR << std::endl;
     }
 
     if (argc > 1)

@@ -331,6 +331,23 @@ bool CommandQueue::process_precharge(BusPacket** busPacket)
             if (packet->tag.find("BAR", 0) != std::string::npos)
                 break;
         }
+        if (getenv("PIMACT_PREA_AWARE") && (*ranks)[nextRankPRE]->pimRank->isPIMACTMode())
+        {
+            for (unsigned b = 0; b < num_banks_ && !found; b++)
+            {
+                for (BusPacket* p : getCommandQueue(nextRankPRE, b))
+                {
+                    if (p->isPIM && bankStates[p->rank][p->bank].currentBankState == RowActive &&
+                        p->row == bankStates[p->rank][p->bank].openRowAddress)
+                    {
+                        found = true;
+                        break;
+                    }
+                    if (p->tag.find("BAR", 0) != std::string::npos)
+                        break;
+                }
+            }
+        }
         if (!found)
         {
             *busPacket =
