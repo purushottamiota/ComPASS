@@ -230,9 +230,10 @@ void Rank::updateState(BusPacket* packet)
     }
     else if (packet->busPacketType == PRECHARGE && pimRank->isPIMACTMode())
     {
+        uint8_t activeOpt = pimRank->getActiveOptype();
         for (int bank = 0; bank < config.NUM_BANKS; bank++)
         {
-            updateBank(packet->busPacketType, bank, packet->row, true, true);
+            updateBank(packet->busPacketType, bank, packet->row, true, true, activeOpt);
         }
     }
     else if (mode_ == dramMode::SB)
@@ -338,9 +339,9 @@ void Rank::updateBank(BusPacketType type, int bank, int row, bool targetBank, bo
             if (targetBank)
             {
                 uint64_t tRP_val = config.tRP;
-                if (AAO_ENABLED && isAAORegisterOp(optype))
+                if (pimRank->isPIMACTMode())
                 {
-                    tRP_val = max((uint64_t)2, (uint64_t)(config.tRP / 2));
+                    tRP_val = pimPrechargeTiming(config, optype, AAO_ENABLED);
                 }
                 bankStates[bank].currentBankState = Idle;
                 bankStates[bank].nextActivate =
