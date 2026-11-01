@@ -31,6 +31,48 @@
 #include "MemoryController.h"
 
 #include <iostream>
+#include <map>
+#include <utility>
+
+static std::map<std::pair<int, int>, uint64_t> g_b4Hist;
+static uint8_t g_rowOptype[64];
+static uint64_t g_numActivate = 0;
+static uint64_t g_numPimAct = 0;
+static uint64_t g_numPrecharge = 0;
+static uint64_t g_numRead = 0;
+static uint64_t g_numWrite = 0;
+
+namespace DRAMSim
+{
+void resetGlobalCommandCounts()
+{
+    g_numActivate = 0;
+    g_numPimAct = 0;
+    g_numPrecharge = 0;
+    g_numRead = 0;
+    g_numWrite = 0;
+    g_b4Hist.clear();
+    for (int i = 0; i < 64; i++) g_rowOptype[i] = 0xFF;
+}
+
+void printGlobalCommandCounts(const std::string& label)
+{
+    std::cout << "[CMD-COUNTS] " << label
+              << " #ACT=" << g_numActivate
+              << " #PIM_ACT=" << g_numPimAct
+              << " #PRE=" << g_numPrecharge
+              << " #RD=" << g_numRead
+              << " #WR=" << g_numWrite
+              << std::endl;
+    for (auto& kv : g_b4Hist)
+    {
+        std::cerr << "[B4-HIST] " << label
+                  << " row_optype=" << kv.first.first
+                  << " pkt_optype=" << kv.first.second
+                  << " count=" << kv.second << "\n";
+    }
+}
+}
 
 #include "AddressMapping.h"
 #include "MemorySystem.h"
@@ -185,6 +227,12 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
     switch (poppedBusPacket->busPacketType)
     {
         case READ:
+            g_numRead++;
+            if (poppedBusPacket->isPIM && (*ranks)[rank]->pimRank->isPIMACTMode() &&
+                poppedBusPacket->optype != g_rowOptype[rank])
+            {
+                g_b4Hist[{g_rowOptype[rank], poppedBusPacket->optype}]++;
+            }
             bankStates[rank][bank].nextPrecharge = max(currentClockCycle + config.READ_TO_PRE_DELAY,
                                                        bankStates[rank][bank].nextPrecharge);
             bankStates[rank][bank].lastCommand = READ;
@@ -214,6 +262,12 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
             break;
 
         case WRITE:
+            g_numWrite++;
+            if (poppedBusPacket->isPIM && (*ranks)[rank]->pimRank->isPIMACTMode() &&
+                poppedBusPacket->optype != g_rowOptype[rank])
+            {
+                g_b4Hist[{g_rowOptype[rank], poppedBusPacket->optype}]++;
+            }
             bankStates[rank][bank].nextPrecharge =
                 max(currentClockCycle + config.WRITE_TO_PRE_DELAY,
                     bankStates[rank][bank].nextPrecharge);
@@ -244,6 +298,7 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
             break;
 
         case ACTIVATE:
+            g_numActivate++;
             setBankStates(rank, bank, RowActive, ACTIVATE, 0,
                           max(currentClockCycle + config.tRC, bankStates[rank][bank].nextActivate));
             bankStates[rank][bank].openRowAddress = poppedBusPacket->row;
@@ -269,6 +324,11 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
 
         case PIM_ACT:
         {
+            g_numPimAct++;
+            if (rank < 64)
+            {
+                g_rowOptype[rank] = poppedBusPacket->optype;
+            }
             uint64_t tRCD_val = (config.tRCDRD - config.AL) + 1;
             uint64_t tRAS_val = config.tRAS + 1;
             uint64_t tRC_val  = config.tRC + 1;
@@ -293,6 +353,7 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
         }
 
         case PRECHARGE:
+            g_numPrecharge++;
             if ((*ranks)[rank]->pimRank->isPIMACTMode())
             {
                 uint64_t tRP_val = config.tRP;
