@@ -1,0 +1,410 @@
+=======================================================
+ Step 3: 12-configuration ground-truth cycle matrix
+ Sun Nov  1 08:33:53 UTC 2026
+=======================================================
+Building (incremental)...
+
+=== 1. BASELINE (standard HBM-PIM protocol, paper dims) ===
+
+--- MODE: Baseline (AAO=0) (AAO=0) ---
+Running filter: PIMKernelFixture.gemv_paper_4kx4k:PIMKernelFixture.add:PIMKernelFixture.mul_paper_2m:PIMKernelFixture.relu_paper_4m
+== [ComPASS Config] AAO_ENABLED set to 0
+Note: Google Test filter = PIMKernelFixture.gemv_paper_4kx4k:PIMKernelFixture.add:PIMKernelFixture.mul_paper_2m:PIMKernelFixture.relu_paper_4m
+[==========] Running 4 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 4 tests from PIMKernelFixture
+[ RUN      ] PIMKernelFixture.add
+>>PIM Kernel Accuraccy Test
+  Input/output data dimension : 1048576
+[CYCLES] add [baseline]  total_cycles=9626
+[CMD-COUNTS] add [baseline] #ACT=34304 #PIM_ACT=0 #PRE=34304 #RD=83968 #WR=139840
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 1048576
+> failed : 0
+[       OK ] PIMKernelFixture.add (3043 ms)
+[ RUN      ] PIMKernelFixture.gemv_paper_4kx4k
+>>PIM Kernel Accuraccy Test
+  Weight data dimension : 4096x4096
+  Input data dimension : 4096
+  Output data dimension : 4096
+[CYCLES] gemv_paper_4kx4k [baseline]  total_cycles=57923
+[CMD-COUNTS] gemv_paper_4kx4k [baseline] #ACT=42944 #PIM_ACT=0 #PRE=42944 #RD=137216 #WR=1066048
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 4096
+> failed : 0
+[       OK ] PIMKernelFixture.gemv_paper_4kx4k (24962 ms)
+[ RUN      ] PIMKernelFixture.mul_paper_2m
+>>PIM Kernel Accuraccy Test
+  Input/output data dimension : 2097152
+[CYCLES] mul_paper_2m [baseline]  total_cycles=19280
+[CMD-COUNTS] mul_paper_2m [baseline] #ACT=67264 #PIM_ACT=0 #PRE=67264 #RD=165888 #WR=279104
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 2097152
+> failed : 0
+[       OK ] PIMKernelFixture.mul_paper_2m (5984 ms)
+[ RUN      ] PIMKernelFixture.relu_paper_4m
+>>PIM Kernel Accuraccy Test
+  Input/output data dimension : 4194304
+[CYCLES] relu_paper_4m [baseline]  total_cycles=25131
+[CMD-COUNTS] relu_paper_4m [baseline] #ACT=74432 #PIM_ACT=0 #PRE=74432 #RD=296960 #WR=295488
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 4194304
+> failed : 0
+[       OK ] PIMKernelFixture.relu_paper_4m (8106 ms)
+[----------] 4 tests from PIMKernelFixture (42097 ms total)
+
+[----------] Global test environment tear-down
+[==========] 4 tests from 1 test suite ran. (42097 ms total)
+[  PASSED  ] 4 tests.
+[EXIT] Baseline (AAO=0) rc=0
+
+--- MODE: Baseline (AAO=1) (AAO=1) ---
+Running filter: PIMKernelFixture.gemv_paper_4kx4k:PIMKernelFixture.add:PIMKernelFixture.mul_paper_2m:PIMKernelFixture.relu_paper_4m
+== [ComPASS Config] AAO_ENABLED set to 1
+Note: Google Test filter = PIMKernelFixture.gemv_paper_4kx4k:PIMKernelFixture.add:PIMKernelFixture.mul_paper_2m:PIMKernelFixture.relu_paper_4m
+[==========] Running 4 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 4 tests from PIMKernelFixture
+[ RUN      ] PIMKernelFixture.add
+>>PIM Kernel Accuraccy Test
+  Input/output data dimension : 1048576
+[CYCLES] add [baseline]  total_cycles=9626
+[CMD-COUNTS] add [baseline] #ACT=34304 #PIM_ACT=0 #PRE=34304 #RD=83968 #WR=139840
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 1048576
+> failed : 0
+[       OK ] PIMKernelFixture.add (2899 ms)
+[ RUN      ] PIMKernelFixture.gemv_paper_4kx4k
+>>PIM Kernel Accuraccy Test
+  Weight data dimension : 4096x4096
+  Input data dimension : 4096
+  Output data dimension : 4096
+[CYCLES] gemv_paper_4kx4k [baseline]  total_cycles=57923
+[CMD-COUNTS] gemv_paper_4kx4k [baseline] #ACT=42944 #PIM_ACT=0 #PRE=42944 #RD=137216 #WR=1066048
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 4096
+> failed : 0
+[       OK ] PIMKernelFixture.gemv_paper_4kx4k (24978 ms)
+[ RUN      ] PIMKernelFixture.mul_paper_2m
+>>PIM Kernel Accuraccy Test
+  Input/output data dimension : 2097152
+[CYCLES] mul_paper_2m [baseline]  total_cycles=19280
+[CMD-COUNTS] mul_paper_2m [baseline] #ACT=67264 #PIM_ACT=0 #PRE=67264 #RD=165888 #WR=279104
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 2097152
+> failed : 0
+[       OK ] PIMKernelFixture.mul_paper_2m (5691 ms)
+[ RUN      ] PIMKernelFixture.relu_paper_4m
+>>PIM Kernel Accuraccy Test
+  Input/output data dimension : 4194304
+[CYCLES] relu_paper_4m [baseline]  total_cycles=25131
+[CMD-COUNTS] relu_paper_4m [baseline] #ACT=74432 #PIM_ACT=0 #PRE=74432 #RD=296960 #WR=295488
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 4194304
+> failed : 0
+[       OK ] PIMKernelFixture.relu_paper_4m (8064 ms)
+[----------] 4 tests from PIMKernelFixture (41634 ms total)
+
+[----------] Global test environment tear-down
+[==========] 4 tests from 1 test suite ran. (41634 ms total)
+[  PASSED  ] 4 tests.
+[EXIT] Baseline (AAO=1) rc=0
+(Sanity check: Baseline cycles under AAO=0 and AAO=1 must be identical)
+
+=== 2. PIM-ACT w/o AAO (AAO=0) ===
+
+--- MODE: PIM-ACT w/o AAO (AAO=0) ---
+Running filter: PIMKernelFixture.gemv_pim_act:PIMKernelFixture.add_pim_act:PIMKernelFixture.mul_pim_act:PIMKernelFixture.relu_pim_act
+== [ComPASS Config] AAO_ENABLED set to 0
+Note: Google Test filter = PIMKernelFixture.gemv_pim_act:PIMKernelFixture.add_pim_act:PIMKernelFixture.mul_pim_act:PIMKernelFixture.relu_pim_act
+[==========] Running 4 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 4 tests from PIMKernelFixture
+[ RUN      ] PIMKernelFixture.gemv_pim_act
+>>PIM Kernel Accuraccy Test
+  Weight data dimension : 4096x4096
+  Input data dimension : 4096
+  Output data dimension : 4096
+[CYCLES] gemv_pim_act [PIM-ACT]  total_cycles=71033
+[CMD-COUNTS] gemv_pim_act [PIM-ACT] #ACT=33984 #PIM_ACT=32896 #PRE=66880 #RD=135168 #WR=1065472
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 4096
+> failed : 0
+[       OK ] PIMKernelFixture.gemv_pim_act (26755 ms)
+[ RUN      ] PIMKernelFixture.add_pim_act
+>>PIM Kernel Accuraccy Test
+  Input/output data dimension : 1048576
+[CYCLES] add_pim_act [PIM-ACT]  total_cycles=11602
+[CMD-COUNTS] add_pim_act [PIM-ACT] #ACT=29632 #PIM_ACT=6144 #PRE=35776 #RD=81920 #WR=139264
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 1048576
+> failed : 0
+[       OK ] PIMKernelFixture.add_pim_act (3400 ms)
+[ RUN      ] PIMKernelFixture.mul_pim_act
+>>PIM Kernel Accuraccy Test
+  Input/output data dimension : 2097152
+[CYCLES] mul_pim_act [PIM-ACT]  total_cycles=23080
+[CMD-COUNTS] mul_pim_act [PIM-ACT] #ACT=58368 #PIM_ACT=12288 #PRE=70656 #RD=163840 #WR=278528
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 2097152
+> failed : 0
+[       OK ] PIMKernelFixture.mul_pim_act (6908 ms)
+[ RUN      ] PIMKernelFixture.relu_pim_act
+>>PIM Kernel Accuraccy Test
+  Input/output data dimension : 4194304
+[CYCLES] relu_pim_act [PIM-ACT]  total_cycles=30903
+[CMD-COUNTS] relu_pim_act [PIM-ACT] #ACT=63488 #PIM_ACT=16384 #PRE=79872 #RD=294912 #WR=294912
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 4194304
+> failed : 0
+[       OK ] PIMKernelFixture.relu_pim_act (10119 ms)
+[----------] 4 tests from PIMKernelFixture (47184 ms total)
+
+[----------] Global test environment tear-down
+[==========] 4 tests from 1 test suite ran. (47184 ms total)
+[  PASSED  ] 4 tests.
+[EXIT] PIM-ACT w/o AAO rc=0
+
+=== 3. PIM-ACT w/ AAO (AAO=1) ===
+
+--- MODE: PIM-ACT w/ AAO (AAO=1) ---
+Running filter: PIMKernelFixture.gemv_pim_act:PIMKernelFixture.add_pim_act:PIMKernelFixture.mul_pim_act:PIMKernelFixture.relu_pim_act
+== [ComPASS Config] AAO_ENABLED set to 1
+Note: Google Test filter = PIMKernelFixture.gemv_pim_act:PIMKernelFixture.add_pim_act:PIMKernelFixture.mul_pim_act:PIMKernelFixture.relu_pim_act
+[==========] Running 4 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 4 tests from PIMKernelFixture
+[ RUN      ] PIMKernelFixture.gemv_pim_act
+>>PIM Kernel Accuraccy Test
+  Weight data dimension : 4096x4096
+  Input data dimension : 4096
+  Output data dimension : 4096
+[CYCLES] gemv_pim_act [PIM-ACT]  total_cycles=69818
+[CMD-COUNTS] gemv_pim_act [PIM-ACT] #ACT=33984 #PIM_ACT=32896 #PRE=66880 #RD=135168 #WR=1065472
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 4096
+> failed : 0
+[       OK ] PIMKernelFixture.gemv_pim_act (26419 ms)
+[ RUN      ] PIMKernelFixture.add_pim_act
+>>PIM Kernel Accuraccy Test
+  Input/output data dimension : 1048576
+[CYCLES] add_pim_act [PIM-ACT]  total_cycles=11602
+[CMD-COUNTS] add_pim_act [PIM-ACT] #ACT=29632 #PIM_ACT=6144 #PRE=35776 #RD=81920 #WR=139264
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 1048576
+> failed : 0
+[       OK ] PIMKernelFixture.add_pim_act (3312 ms)
+[ RUN      ] PIMKernelFixture.mul_pim_act
+>>PIM Kernel Accuraccy Test
+  Input/output data dimension : 2097152
+[CYCLES] mul_pim_act [PIM-ACT]  total_cycles=23080
+[CMD-COUNTS] mul_pim_act [PIM-ACT] #ACT=58368 #PIM_ACT=12288 #PRE=70656 #RD=163840 #WR=278528
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 2097152
+> failed : 0
+[       OK ] PIMKernelFixture.mul_pim_act (6664 ms)
+[ RUN      ] PIMKernelFixture.relu_pim_act
+>>PIM Kernel Accuraccy Test
+  Input/output data dimension : 4194304
+[CYCLES] relu_pim_act [PIM-ACT]  total_cycles=30903
+[CMD-COUNTS] relu_pim_act [PIM-ACT] #ACT=63488 #PIM_ACT=16384 #PRE=79872 #RD=294912 #WR=294912
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 4194304
+> failed : 0
+[       OK ] PIMKernelFixture.relu_pim_act (10093 ms)
+[----------] 4 tests from PIMKernelFixture (46489 ms total)
+
+[----------] Global test environment tear-down
+[==========] 4 tests from 1 test suite ran. (46489 ms total)
+[  PASSED  ] 4 tests.
+[EXIT] PIM-ACT w/ AAO rc=0
+
+=== 4. A3 / Step 4: Cross-protocol correctness + cycle comparison ===
+
+--- MODE: A3 Cross-check (AAO=1) (AAO=1) ---
+Running filter: PIMKernelFixture.a3_*
+== [ComPASS Config] AAO_ENABLED set to 1
+Note: Google Test filter = PIMKernelFixture.a3_*
+[==========] Running 4 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 4 tests from PIMKernelFixture
+[ RUN      ] PIMKernelFixture.a3_gemv_4kx4k
+>>PIM Kernel Accuraccy Test
+[CYCLES] gemv_4kx4k [baseline]  total_cycles=57923
+[CMD-COUNTS] gemv_4kx4k [baseline] #ACT=42944 #PIM_ACT=0 #PRE=42944 #RD=137216 #WR=1066048
+[CYCLES] gemv_4kx4k [PIM-ACT]  total_cycles=69818
+[CMD-COUNTS] gemv_4kx4k [PIM-ACT] #ACT=33984 #PIM_ACT=32896 #PRE=66880 #RD=135168 #WR=1065472
+[A3-OK] gemv_4kx4k: baseline and PIM-ACT results are bitwise-identical (4096 bursts).
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 0
+> failed : 0
+[       OK ] PIMKernelFixture.a3_gemv_4kx4k (54333 ms)
+[ RUN      ] PIMKernelFixture.a3_add_1m
+>>PIM Kernel Accuraccy Test
+[CYCLES] add_1m [baseline]  total_cycles=9626
+[CMD-COUNTS] add_1m [baseline] #ACT=34304 #PIM_ACT=0 #PRE=34304 #RD=83968 #WR=139840
+[CYCLES] add_1m [PIM-ACT]  total_cycles=11602
+[CMD-COUNTS] add_1m [PIM-ACT] #ACT=29632 #PIM_ACT=6144 #PRE=35776 #RD=81920 #WR=139264
+[A3-OK] add_1m: baseline and PIM-ACT results are bitwise-identical (65536 bursts).
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 0
+> failed : 0
+[       OK ] PIMKernelFixture.a3_add_1m (6299 ms)
+[ RUN      ] PIMKernelFixture.a3_mul_2m
+>>PIM Kernel Accuraccy Test
+[CYCLES] mul_2m [baseline]  total_cycles=19280
+[CMD-COUNTS] mul_2m [baseline] #ACT=67264 #PIM_ACT=0 #PRE=67264 #RD=165888 #WR=279104
+[CYCLES] mul_2m [PIM-ACT]  total_cycles=23080
+[CMD-COUNTS] mul_2m [PIM-ACT] #ACT=58368 #PIM_ACT=12288 #PRE=70656 #RD=163840 #WR=278528
+[A3-OK] mul_2m: baseline and PIM-ACT results are bitwise-identical (131072 bursts).
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 0
+> failed : 0
+[       OK ] PIMKernelFixture.a3_mul_2m (13166 ms)
+[ RUN      ] PIMKernelFixture.a3_relu_4m
+>>PIM Kernel Accuraccy Test
+[CYCLES] relu_4m [baseline]  total_cycles=25131
+[CMD-COUNTS] relu_4m [baseline] #ACT=74432 #PIM_ACT=0 #PRE=74432 #RD=296960 #WR=295488
+[CYCLES] relu_4m [PIM-ACT]  total_cycles=30903
+[CMD-COUNTS] relu_4m [PIM-ACT] #ACT=63488 #PIM_ACT=16384 #PRE=79872 #RD=294912 #WR=294912
+[A3-OK] relu_4m: baseline and PIM-ACT results are bitwise-identical (262144 bursts).
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 0
+> failed : 0
+[       OK ] PIMKernelFixture.a3_relu_4m (18715 ms)
+[----------] 4 tests from PIMKernelFixture (92514 ms total)
+
+[----------] Global test environment tear-down
+[==========] 4 tests from 1 test suite ran. (92514 ms total)
+[  PASSED  ] 4 tests.
+[EXIT] A3 Cross-check (AAO=1) rc=0
+
+--- MODE: A3 Cross-check (AAO=0) (AAO=0) ---
+Running filter: PIMKernelFixture.a3_*
+== [ComPASS Config] AAO_ENABLED set to 0
+Note: Google Test filter = PIMKernelFixture.a3_*
+[==========] Running 4 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 4 tests from PIMKernelFixture
+[ RUN      ] PIMKernelFixture.a3_gemv_4kx4k
+>>PIM Kernel Accuraccy Test
+[CYCLES] gemv_4kx4k [baseline]  total_cycles=57923
+[CMD-COUNTS] gemv_4kx4k [baseline] #ACT=42944 #PIM_ACT=0 #PRE=42944 #RD=137216 #WR=1066048
+[CYCLES] gemv_4kx4k [PIM-ACT]  total_cycles=71033
+[CMD-COUNTS] gemv_4kx4k [PIM-ACT] #ACT=33984 #PIM_ACT=32896 #PRE=66880 #RD=135168 #WR=1065472
+[A3-OK] gemv_4kx4k: baseline and PIM-ACT results are bitwise-identical (4096 bursts).
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 0
+> failed : 0
+[       OK ] PIMKernelFixture.a3_gemv_4kx4k (54171 ms)
+[ RUN      ] PIMKernelFixture.a3_add_1m
+>>PIM Kernel Accuraccy Test
+[CYCLES] add_1m [baseline]  total_cycles=9626
+[CMD-COUNTS] add_1m [baseline] #ACT=34304 #PIM_ACT=0 #PRE=34304 #RD=83968 #WR=139840
+[CYCLES] add_1m [PIM-ACT]  total_cycles=11602
+[CMD-COUNTS] add_1m [PIM-ACT] #ACT=29632 #PIM_ACT=6144 #PRE=35776 #RD=81920 #WR=139264
+[A3-OK] add_1m: baseline and PIM-ACT results are bitwise-identical (65536 bursts).
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 0
+> failed : 0
+[       OK ] PIMKernelFixture.a3_add_1m (6144 ms)
+[ RUN      ] PIMKernelFixture.a3_mul_2m
+>>PIM Kernel Accuraccy Test
+[CYCLES] mul_2m [baseline]  total_cycles=19280
+[CMD-COUNTS] mul_2m [baseline] #ACT=67264 #PIM_ACT=0 #PRE=67264 #RD=165888 #WR=279104
+[CYCLES] mul_2m [PIM-ACT]  total_cycles=23080
+[CMD-COUNTS] mul_2m [PIM-ACT] #ACT=58368 #PIM_ACT=12288 #PRE=70656 #RD=163840 #WR=278528
+[A3-OK] mul_2m: baseline and PIM-ACT results are bitwise-identical (131072 bursts).
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 0
+> failed : 0
+[       OK ] PIMKernelFixture.a3_mul_2m (12308 ms)
+[ RUN      ] PIMKernelFixture.a3_relu_4m
+>>PIM Kernel Accuraccy Test
+[CYCLES] relu_4m [baseline]  total_cycles=25131
+[CMD-COUNTS] relu_4m [baseline] #ACT=74432 #PIM_ACT=0 #PRE=74432 #RD=296960 #WR=295488
+[CYCLES] relu_4m [PIM-ACT]  total_cycles=30903
+[CMD-COUNTS] relu_4m [PIM-ACT] #ACT=63488 #PIM_ACT=16384 #PRE=79872 #RD=294912 #WR=294912
+[A3-OK] relu_4m: baseline and PIM-ACT results are bitwise-identical (262144 bursts).
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 0
+> failed : 0
+[       OK ] PIMKernelFixture.a3_relu_4m (18159 ms)
+[----------] 4 tests from PIMKernelFixture (90783 ms total)
+
+[----------] Global test environment tear-down
+[==========] 4 tests from 1 test suite ran. (90783 ms total)
+[  PASSED  ] 4 tests.
+[EXIT] A3 Cross-check (AAO=0) rc=0
+
+=======================================================
+ Summary of Extracted [CYCLES]:
+ Summary of Extracted [CYCLES]:
+[CYCLES] add [baseline]  total_cycles=9626
+[CYCLES] add_1m [PIM-ACT]  total_cycles=11602
+[CYCLES] add_1m [baseline]  total_cycles=9626
+[CYCLES] add_pim_act [PIM-ACT]  total_cycles=11602
+[CYCLES] gemv_4kx4k [PIM-ACT]  total_cycles=69818
+[CYCLES] gemv_4kx4k [PIM-ACT]  total_cycles=71033
+[CYCLES] gemv_4kx4k [baseline]  total_cycles=57923
+[CYCLES] gemv_paper_4kx4k [baseline]  total_cycles=57923
+[CYCLES] gemv_pim_act [PIM-ACT]  total_cycles=69818
+[CYCLES] gemv_pim_act [PIM-ACT]  total_cycles=71033
+[CYCLES] mul_2m [PIM-ACT]  total_cycles=23080
+[CYCLES] mul_2m [baseline]  total_cycles=19280
+[CYCLES] mul_paper_2m [baseline]  total_cycles=19280
+[CYCLES] mul_pim_act [PIM-ACT]  total_cycles=23080
+[CYCLES] relu_4m [PIM-ACT]  total_cycles=30903
+[CYCLES] relu_4m [baseline]  total_cycles=25131
+[CYCLES] relu_paper_4m [baseline]  total_cycles=25131
+[CYCLES] relu_pim_act [PIM-ACT]  total_cycles=30903
+=======================================================
+=======================================================

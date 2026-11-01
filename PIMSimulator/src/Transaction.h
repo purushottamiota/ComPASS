@@ -59,7 +59,8 @@ class Transaction
     uint64_t timeAdded;
     uint64_t timeReturned;
     std::string tag;
-    uint8_t optype = 0;
+    static constexpr uint8_t NO_OPTYPE = 0xFF;
+    uint8_t optype = NO_OPTYPE;
     bool isPIM = false;
 
     friend ostream& operator<<(ostream& os, const Transaction& t);

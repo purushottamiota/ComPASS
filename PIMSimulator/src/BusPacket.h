@@ -65,6 +65,7 @@ class BusPacket
     uint64_t physicalAddress;
     BurstType* data;
     std::string tag;
+    static constexpr uint8_t NO_OPTYPE = 0xFF;
     uint8_t optype;
     bool isPIM;
 
@@ -72,7 +73,7 @@ class BusPacket
     BusPacket(BusPacketType packtype, uint64_t physicalAddr, unsigned col, unsigned rw, unsigned r,
               unsigned b, BurstType* dat, ostream& simLog);
     BusPacket(BusPacketType packtype, uint64_t physicalAddr, unsigned col, unsigned rw, unsigned r,
-              unsigned b, BurstType* dat, ostream& simLog, std::string tg, uint8_t opt = 0, bool pim = false);
+              unsigned b, BurstType* dat, ostream& simLog, std::string tg, uint8_t opt = NO_OPTYPE, bool pim = false);
 
     void print();
     void print(uint64_t currentClockCycle, bool dataStart);
