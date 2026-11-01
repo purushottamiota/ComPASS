@@ -37,7 +37,7 @@ def getSources(target):
 
 def build(target_name, base_path, build_flags):
     # setup the default build envronments
-    env = Environment()
+    env = Environment(ENV=os.environ)
 
     env.Append(CXXFLAGS=build_flags["CXXFLAGS"] + build_flags["gprof_option"])
     env.Append(LINKFLAGS=build_flags["LINKFLAGS"] + build_flags["gprof_option"])
@@ -45,28 +45,52 @@ def build(target_name, base_path, build_flags):
     # add flags
     env = getFlags(env)
 
+    cpppath = [base_path["lib"], base_path["source"], base_path["tools"]]
+    libpath = ['.']
+
+    # Auto-detect GoogleTest from environment, custom arguments, or local folder
+    gtest_dir = ARGUMENTS.get('GTEST_DIR', os.environ.get('GTEST_DIR', ''))
+    candidate_gtest_dirs = []
+    if gtest_dir:
+        candidate_gtest_dirs.append(gtest_dir)
+    candidate_gtest_dirs.extend([
+        joinpath(root_path, 'googletest'),
+        joinpath(root_path, 'lib', 'googletest'),
+    ])
+    if 'CONDA_PREFIX' in os.environ:
+        candidate_gtest_dirs.append(os.environ['CONDA_PREFIX'])
+
+    for gd in candidate_gtest_dirs:
+        if os.path.exists(gd):
+            for inc in [joinpath(gd, 'googletest', 'include'), joinpath(gd, 'include')]:
+                if os.path.exists(inc) and inc not in cpppath:
+                    cpppath.append(inc)
+            for lp in [joinpath(gd, 'build', 'lib'), joinpath(gd, 'lib'), joinpath(gd, 'lib64')]:
+                if os.path.exists(lp) and lp not in libpath:
+                    libpath.append(lp)
+
     env.VariantDir(base_path["build"], base_path["source"], duplicate=0)
     env.VariantDir(base_path["tools_build"], base_path["tools"], duplicate=0)
     build_sources = getSources("build")
     env.Program(target=target_name["binary"],
                 source=build_sources,
-                CPPPATH=[base_path["lib"], base_path["source"], base_path["tools"]],
-                LIBPATH=['.'], LIBS=['gtest', 'pthread'])
+                CPPPATH=cpppath,
+                LIBPATH=libpath, LIBS=['gtest', 'pthread'])
 
-    no_lib = ARGUMENTS.get('NO_LIBRARY', 0)
+    no_lib = ARGUMENTS.get('NO_LIBRARY', 1)
     if int(no_lib) == 0:
         lib_sources = getSources("lib")
         # print ("Creating a static library from objects")
         env.StaticLibrary(target=target_name["library"],
                           source=lib_sources,
-                          CPPPATH=[base_path["lib"], base_path["source"], base_path["tools"]],
-                          LIBPATH=['.'],
+                          CPPPATH=cpppath,
+                          LIBPATH=libpath,
                           LIBS=['gtest', 'pthread'])
         # print ("Creating a shared library from objects")
         env.SharedLibrary(target=target_name["library"],
                           source=lib_sources,
-                          CPPPATH=[base_path["lib"], base_path["source"], base_path["tools"]],
-                          LIBPATH=['.'],
+                          CPPPATH=cpppath,
+                          LIBPATH=libpath,
                           LIBS=['gtest', 'pthread'])
 
 
@@ -88,8 +112,8 @@ base_path = {
 
 build_flags = {
     "gprof_option": '',
-    "CXXFLAGS": '-g -O2 -std=c++14 -Wall -Wno-reorder -Wno-sign-compare',
-    "LINKFLAGS": '-g -O2 -std=c++14 -Wall -Wno-reorder -Wno-sign-compare',
+    "CXXFLAGS": '-g -O2 -std=c++17 -Wall -Wno-reorder -Wno-sign-compare',
+    "LINKFLAGS": '-g -O2 -std=c++17 -Wall -Wno-reorder -Wno-sign-compare',
 }
 
 setNumJobs()

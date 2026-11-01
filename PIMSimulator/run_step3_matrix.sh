@@ -30,7 +30,7 @@ fi
 
 # Step 1: Always rebuild incrementally
 echo "Building (incremental)..." | tee -a "$LOG"
-scons -j"$(nproc)" || { echo "Build failed" | tee -a "$LOG"; exit 1; }
+scons NO_LIBRARY=1 -j"$(nproc)" || { echo "Build failed" | tee -a "$LOG"; exit 1; }
 
 run_mode() {
     local label="$1"

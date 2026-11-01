@@ -330,8 +330,8 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
                 g_rowOptype[rank] = poppedBusPacket->optype;
             }
             uint64_t tRCD_val = (config.tRCDRD - config.AL) + 1;
-            uint64_t tRAS_val = config.tRAS + 1;
-            uint64_t tRC_val  = config.tRC + 1;
+            uint64_t tRAS_val = config.tRAS;
+            uint64_t tRC_val  = config.tRC;
 
             if (AAO_ENABLED && isAAORegisterOp(poppedBusPacket->optype))
             {
