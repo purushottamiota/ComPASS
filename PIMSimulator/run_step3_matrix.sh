@@ -12,7 +12,7 @@
 # =============================================================================
 
 SIM=./sim
-LOG=step3_results.txt
+LOG=${LOG:-step3_results.txt}
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
@@ -28,14 +28,9 @@ if [ ! -f "data/gemv/gemv_weight_4096x4096.npy" ] || [ ! -f "data/mul/eltmul_out
     python3 data/generate_all_data.py 2>&1 | tee -a "$LOG"
 fi
 
-# Step 1: Ensure simulator binary is built
-if [ ! -f "$SIM" ]; then
-    echo "Binary $SIM not found. Compiling with scons..." | tee -a "$LOG"
-    if ! scons; then
-        echo "Build failed. Check gtest installation." | tee -a "$LOG"
-        exit 1
-    fi
-fi
+# Step 1: Always rebuild incrementally
+echo "Building (incremental)..." | tee -a "$LOG"
+scons -j"$(nproc)" || { echo "Build failed" | tee -a "$LOG"; exit 1; }
 
 run_mode() {
     local label="$1"
