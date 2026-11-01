@@ -331,7 +331,12 @@ bool CommandQueue::process_precharge(BusPacket** busPacket)
             if (packet->tag.find("BAR", 0) != std::string::npos)
                 break;
         }
-        if (getenv("PIMACT_PREA_AWARE") && (*ranks)[nextRankPRE]->pimRank->isPIMACTMode())
+        static const bool prea_aware_enabled = []() {
+            const char* v = getenv("PIMACT_PREA_AWARE");
+            if (v != nullptr) return (atoi(v) != 0);
+            return true; // Default: enabled (faithful to Paper §5.1)
+        }();
+        if (prea_aware_enabled && (*ranks)[nextRankPRE]->pimRank->isPIMACTMode())
         {
             for (unsigned b = 0; b < num_banks_ && !found; b++)
             {

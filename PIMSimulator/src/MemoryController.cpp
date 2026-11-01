@@ -65,13 +65,16 @@ void printGlobalCommandCounts(const std::string& label)
               << " #RD=" << g_numRead
               << " #WR=" << g_numWrite
               << std::endl;
+    uint64_t b4_total = 0;
     for (auto& kv : g_b4Hist)
     {
-        std::cerr << "[B4-HIST] " << label
+        b4_total += kv.second;
+        std::cout << "[B4-HIST] " << label
                   << " row_optype=" << kv.first.first
                   << " pkt_optype=" << kv.first.second
-                  << " count=" << kv.second << "\n";
+                  << " count=" << kv.second << std::endl;
     }
+    std::cout << "[B4-HIST] " << label << " total=" << b4_total << std::endl;
 }
 }
 
@@ -211,6 +214,12 @@ void MemoryController::setBankStates(size_t rank, size_t bank, CurrentBankState 
 
 void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
 {
+    if (poppedBusPacket && (poppedBusPacket->tag.find("SB_TO_HAB") != std::string::npos ||
+                            poppedBusPacket->tag.find("HAB_TO_SB") != std::string::npos))
+    {
+        std::cerr << "[MODE-SWITCH] " << poppedBusPacket->tag << " cycle=" << currentClockCycle << "\n";
+    }
+
     if (poppedBusPacket->busPacketType == WRITE)
     {
         writeDataToSend.push_back(new BusPacket(

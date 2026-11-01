@@ -19,3 +19,9 @@ PIMSimulator/data/*/*.npy
 Thumbs.db
 *.swp
 
+
+_sconsign.dblite
+*.dblite
+step3_results.txt
+PIMSimulator/step3_results.txt
+PIMSimulator/googletest/
