@@ -25,8 +25,22 @@
 
 using namespace std;
 
+// A2: AAO_ENABLED is defined in PrintMacros.cpp. Expose it here so the
+// runtime env-var switch can override the compiled default (true).
+extern bool AAO_ENABLED;
+
 int main(int argc, char* argv[])
 {
+    // A2: Allow scripted evaluation of all three paper modes without recompiling:
+    //   AAO=0  -> PIM-ACT w/o AAO
+    //   AAO=1  -> PIM-ACT w/ AAO  (compiled default)
+    //   (unset) -> compiled default (currently true)
+    if (const char* v = getenv("AAO"))
+    {
+        AAO_ENABLED = (atoi(v) != 0);
+        std::cerr << "== [ComPASS Config] AAO_ENABLED set to " << AAO_ENABLED << std::endl;
+    }
+
     if (argc > 1)
     {
         ::testing::InitGoogleTest(&argc, argv);

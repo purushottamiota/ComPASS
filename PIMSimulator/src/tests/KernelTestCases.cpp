@@ -226,3 +226,82 @@ TEST_F(PIMKernelFixture, relu_pim_act)
     delete[] result_;
     delete dim_data;
 }
+// ============================================================
+// A1: Paper-size BASELINE tests (Section 6, Lines 998-999)
+// These mirror the paper dimensions for the standard HBM-PIM
+// baseline protocol. Original smoke tests above are preserved
+// so quick sanity checks remain fast.
+// ============================================================
+
+TEST_F(PIMKernelFixture, gemv_paper_4kx4k)
+{
+    // A1: Paper Section 6 specifies GEMV as 4K x 4K.
+    // The existing 'gemv' test uses 4096 x 1024 (wrong size for paper comparison).
+    // This test runs the SAME baseline (standard HBM-PIM) protocol at the correct size.
+    shared_ptr<PIMKernel> kernel = make_pim_kernel();
+
+    uint32_t batch_size = 1;
+    uint32_t output_dim = 4096;
+    uint32_t input_dim  = 4096;  // Paper: 4K x 4K
+
+    DataDim *dim_data = new DataDim(KernelType::GEMV, batch_size, output_dim, input_dim, true);
+    dim_data->printDim(KernelType::GEMV);
+
+    reduced_result_ = new BurstType[dim_data->dimTobShape(output_dim)];
+    result_ = getResultPIM(KernelType::GEMV, dim_data, kernel, result_);
+
+    testStatsClear();
+    expectAccuracy(KernelType::GEMV, output_dim, dim_data->output_npbst_,
+                   dim_data->getNumElementsPerBlocks());
+
+    delete[] result_;
+    delete[] reduced_result_;
+    delete dim_data;
+}
+
+TEST_F(PIMKernelFixture, mul_paper_2m)
+{
+    // A1: Paper Section 6 specifies MUL as 2M vectors.
+    // The existing 'mul' test uses 1M (wrong size for paper comparison).
+    // This test runs the SAME baseline (standard HBM-PIM) protocol at the correct size.
+    shared_ptr<PIMKernel> kernel = make_pim_kernel();
+
+    uint32_t batch_size = 1;
+    uint32_t output_dim = 2 * 1024 * 1024;  // Paper: 2M
+    uint32_t input_dim  = output_dim;
+
+    DataDim *dim_data = new DataDim(KernelType::MUL, batch_size, output_dim, input_dim, true);
+    dim_data->printDim(KernelType::MUL);
+
+    result_ = getResultPIM(KernelType::MUL, dim_data, kernel, result_);
+    kernel->runPIM();
+
+    testStatsClear();
+    expectAccuracy(KernelType::MUL, dim_data->dimTobShape(output_dim), dim_data->output_npbst_);
+
+    delete[] result_;
+    delete dim_data;
+}
+
+TEST_F(PIMKernelFixture, relu_paper_4m)
+{
+    // A1: Paper Section 6 specifies ReLU as 4M vectors.
+    // The existing 'relu' test uses 1M (wrong size for paper comparison).
+    // This test runs the SAME baseline (standard HBM-PIM) protocol at the correct size.
+    shared_ptr<PIMKernel> kernel = make_pim_kernel();
+
+    uint32_t output_dim = 4 * 1024 * 1024;  // Paper: 4M
+    uint32_t input_dim  = output_dim;
+
+    DataDim *dim_data = new DataDim(KernelType::RELU, 1, output_dim, input_dim, true);
+    dim_data->printDim(KernelType::RELU);
+
+    result_ = getResultPIM(KernelType::RELU, dim_data, kernel, result_);
+    kernel->runPIM();
+
+    testStatsClear();
+    expectAccuracy(KernelType::RELU, dim_data->dimTobShape(output_dim), dim_data->output_npbst_);
+
+    delete[] result_;
+    delete dim_data;
+}

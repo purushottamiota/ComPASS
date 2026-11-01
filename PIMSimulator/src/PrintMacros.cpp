@@ -29,6 +29,9 @@ bool VERIFICATION_OUTPUT;
 bool LOG_OUTPUT;
 
 bool AAO_ENABLED = true;
-bool PIM_ACT_PROTOCOL = true;
+// NOTE (A4): PIM_ACT_PROTOCOL was a dead flag -- never read anywhere in the
+// codebase. Protocol dispatch is determined entirely by the kernel test calls
+// (getResultPIM vs getResultPIMACT). Removed to avoid confusion.
+// To control protocol mode at runtime, use the AAO env-var switch (see MainTest.cpp).
 
 std::string SIM_TRACE_FILE;
