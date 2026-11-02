@@ -51,6 +51,9 @@ namespace DRAMSim
 class Rank;
 class MemorySystem;
 class MemoryControllerStats;
+
+void resetGlobalCommandCounts();
+void printGlobalCommandCounts(const std::string& label = "");
 class MemoryController : public SimulatorObject
 {
   public:

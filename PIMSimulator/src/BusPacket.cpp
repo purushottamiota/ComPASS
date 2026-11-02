@@ -43,7 +43,7 @@ BusPacket::BusPacket(BusPacketType packtype, uint64_t physicalAddr, unsigned col
       rank(r),
       physicalAddress(physicalAddr),
       data(dat),
-      optype(0),
+      optype(NO_OPTYPE),
       isPIM(false)
 {
 }

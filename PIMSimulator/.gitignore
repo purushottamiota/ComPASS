@@ -39,3 +39,10 @@ tags
 .sconsign.dblite
 bin
 
+
+_sconsign.dblite
+*.dblite
+step3_results.txt
+data/*/*.npy
+googletest/
+mode_switch_run.log

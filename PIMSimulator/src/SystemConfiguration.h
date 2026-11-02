@@ -64,7 +64,11 @@ extern bool PRINT_CHAN_STAT;
 extern bool DEBUG_PIM_TIME;
 extern bool DEBUG_CMD_TRACE;
 extern bool AAO_ENABLED;
-extern bool PIM_ACT_PROTOCOL;
+extern float AAO_TRCD_FACTOR;
+extern float AAO_TRAS_FACTOR;
+extern float AAO_TRC_FACTOR;
+extern float AAO_TRP_FACTOR;
+// NOTE (A4): PIM_ACT_PROTOCOL extern removed -- flag was dead (never read). See PrintMacros.cpp.
 
 extern bool DEBUG_PIM_BLOCK;
 

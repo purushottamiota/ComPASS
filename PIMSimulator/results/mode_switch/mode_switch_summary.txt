@@ -1,0 +1,72 @@
+=======================================================
+ TEST: add (Total events: 4864)
+=======================================================
+1. parkIn() window:
+   cycles: [4242, 4329], duration = 88 cycles (packets: 2048)
+2. SB -> HAB window:
+   cycles: [4319, 4359], duration = 41 cycles (packets: 256)
+3. HAB <-> HAB_PIM windows (PIM packets: 256):
+   Burst 1 (HAB -> HAB_PIM): cycles [4399, 4409], duration = 11 cycles (count: 128)
+   Burst 2 (HAB_PIM -> HAB): cycles [7366, 7376], duration = 11 cycles (count: 128)
+4. HAB -> SB window:
+   cycles: [7416, 7437], duration = 22 cycles (packets: 256)
+5. parkOut() window:
+   cycles: [7464, 7549], duration = 86 cycles (packets: 2048)
+   Sum of individual mode-switch windows: 259 cycles
+   Entry overhead (parkIn start -> HAB_PIM entry end): 4242 -> 4409 = 168 cycles
+   Exit overhead (HAB_PIM exit start -> parkOut end): 7366 -> 7549 = 184 cycles
+   Total entry + exit mode-switch overhead = 352 cycles (at 1 ns/cycle = 352 ns)
+=======================================================
+ TEST: gemv_paper_4kx4k (Total events: 4864)
+=======================================================
+1. parkIn() window:
+   cycles: [44283, 44369], duration = 87 cycles (packets: 2048)
+2. SB -> HAB window:
+   cycles: [44359, 44399], duration = 41 cycles (packets: 256)
+3. HAB <-> HAB_PIM windows (PIM packets: 256):
+   Burst 1 (HAB -> HAB_PIM): cycles [44439, 44449], duration = 11 cycles (count: 128)
+   Burst 2 (HAB_PIM -> HAB): cycles [57582, 57592], duration = 11 cycles (count: 128)
+4. HAB -> SB window:
+   cycles: [57632, 57653], duration = 22 cycles (packets: 256)
+5. parkOut() window:
+   cycles: [57680, 57765], duration = 86 cycles (packets: 2048)
+   Sum of individual mode-switch windows: 258 cycles
+   Entry overhead (parkIn start -> HAB_PIM entry end): 44283 -> 44449 = 167 cycles
+   Exit overhead (HAB_PIM exit start -> parkOut end): 57582 -> 57765 = 184 cycles
+   Total entry + exit mode-switch overhead = 351 cycles (at 1 ns/cycle = 351 ns)
+=======================================================
+ TEST: mul_paper_2m (Total events: 4864)
+=======================================================
+1. parkIn() window:
+   cycles: [8482, 8568], duration = 87 cycles (packets: 2048)
+2. SB -> HAB window:
+   cycles: [8558, 8598], duration = 41 cycles (packets: 256)
+3. HAB <-> HAB_PIM windows (PIM packets: 256):
+   Burst 1 (HAB -> HAB_PIM): cycles [8638, 8648], duration = 11 cycles (count: 128)
+   Burst 2 (HAB_PIM -> HAB): cycles [14584, 14594], duration = 11 cycles (count: 128)
+4. HAB -> SB window:
+   cycles: [14634, 14655], duration = 22 cycles (packets: 256)
+5. parkOut() window:
+   cycles: [14682, 14767], duration = 86 cycles (packets: 2048)
+   Sum of individual mode-switch windows: 258 cycles
+   Entry overhead (parkIn start -> HAB_PIM entry end): 8482 -> 8648 = 167 cycles
+   Exit overhead (HAB_PIM exit start -> parkOut end): 14584 -> 14767 = 184 cycles
+   Total entry + exit mode-switch overhead = 351 cycles (at 1 ns/cycle = 351 ns)
+=======================================================
+ TEST: relu_paper_4m (Total events: 4864)
+=======================================================
+1. parkIn() window:
+   cycles: [8482, 8568], duration = 87 cycles (packets: 2048)
+2. SB -> HAB window:
+   cycles: [8558, 8598], duration = 41 cycles (packets: 256)
+3. HAB <-> HAB_PIM windows (PIM packets: 256):
+   Burst 1 (HAB -> HAB_PIM): cycles [8638, 8648], duration = 11 cycles (count: 128)
+   Burst 2 (HAB_PIM -> HAB): cycles [15958, 15968], duration = 11 cycles (count: 128)
+4. HAB -> SB window:
+   cycles: [16008, 16029], duration = 22 cycles (packets: 256)
+5. parkOut() window:
+   cycles: [16056, 16141], duration = 86 cycles (packets: 2048)
+   Sum of individual mode-switch windows: 258 cycles
+   Entry overhead (parkIn start -> HAB_PIM entry end): 8482 -> 8648 = 167 cycles
+   Exit overhead (HAB_PIM exit start -> parkOut end): 15958 -> 16141 = 184 cycles
+   Total entry + exit mode-switch overhead = 351 cycles (at 1 ns/cycle = 351 ns)

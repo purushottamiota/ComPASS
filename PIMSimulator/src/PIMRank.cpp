@@ -496,7 +496,7 @@ void PIMRank::doPIMACT(BusPacket* packet)
         return;
     }
 
-    uint8_t optype = (packet->optype != 0) ? packet->optype : activeOptype_;
+    uint8_t optype = (packet->optype != 0xFF) ? packet->optype : activeOptype_;
     int grf_id = getGrfIdx(packet->column);
 
     if (optype == OP_MOV_HOST_TO_RF)

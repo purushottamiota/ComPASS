@@ -29,6 +29,7 @@
  *********************************************************************************/
 
 #include "Rank.h"
+#include "PimActTiming.h"
 
 #include <iostream>
 
@@ -224,14 +225,15 @@ void Rank::updateState(BusPacket* packet)
     {
         for (int bank = 0; bank < config.NUM_BANKS; bank++)
         {
-            updateBank(packet->busPacketType, bank, packet->row, true, true);
+            updateBank(packet->busPacketType, bank, packet->row, true, true, packet->optype);
         }
     }
     else if (packet->busPacketType == PRECHARGE && pimRank->isPIMACTMode())
     {
+        uint8_t activeOpt = pimRank->getActiveOptype();
         for (int bank = 0; bank < config.NUM_BANKS; bank++)
         {
-            updateBank(packet->busPacketType, bank, packet->row, true, true);
+            updateBank(packet->busPacketType, bank, packet->row, true, true, activeOpt);
         }
     }
     else if (mode_ == dramMode::SB)
@@ -322,23 +324,14 @@ void Rank::updateBank(BusPacketType type, int bank, int row, bool targetBank, bo
         case PIM_ACT:
             if (targetBank)
             {
-                uint64_t tRCD_val = (config.tRCDRD - config.AL) + 1;
-                uint64_t tRAS_val = config.tRAS + 1;
-                uint64_t tRC_val  = config.tRC + 1;
-
-                if (AAO_ENABLED && isAAORegisterOp(optype))
-                {
-                    tRCD_val = max((uint64_t)2, (uint64_t)(config.tRCDRD / 2));
-                    tRAS_val = max((uint64_t)4, (uint64_t)((config.tRAS * 6) / 10));
-                    tRC_val  = max((uint64_t)6, (uint64_t)((config.tRC * 6) / 10));
-                }
+                auto timing = pimActTiming(config, optype, AAO_ENABLED);
 
                 bankStates[bank].currentBankState = RowActive;
-                bankStates[bank].nextActivate = currentClockCycle + tRC_val;
+                bankStates[bank].nextActivate = currentClockCycle + timing.tRC;
                 bankStates[bank].openRowAddress = row;
-                bankStates[bank].nextWrite = currentClockCycle + tRCD_val;
-                bankStates[bank].nextRead = currentClockCycle + tRCD_val;
-                bankStates[bank].nextPrecharge = currentClockCycle + tRAS_val;
+                bankStates[bank].nextWrite = currentClockCycle + timing.tRCDW;
+                bankStates[bank].nextRead = currentClockCycle + timing.tRCD;
+                bankStates[bank].nextPrecharge = currentClockCycle + timing.tRAS;
             }
             break;
 
@@ -346,9 +339,9 @@ void Rank::updateBank(BusPacketType type, int bank, int row, bool targetBank, bo
             if (targetBank)
             {
                 uint64_t tRP_val = config.tRP;
-                if (AAO_ENABLED && isAAORegisterOp(optype))
+                if (pimRank->isPIMACTMode())
                 {
-                    tRP_val = max((uint64_t)2, (uint64_t)(config.tRP / 2));
+                    tRP_val = pimPrechargeTiming(config, optype, AAO_ENABLED);
                 }
                 bankStates[bank].currentBankState = Idle;
                 bankStates[bank].nextActivate =

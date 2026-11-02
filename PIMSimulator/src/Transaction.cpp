@@ -48,7 +48,7 @@ Transaction::Transaction(TransactionType transType, uint64_t addr, BurstType* da
 
 Transaction::Transaction(TransactionType transType, uint64_t addr, const std::string& str,
                          BurstType* dat)
-    : transactionType(transType), address(addr), tag(str), data(dat), optype(0), isPIM(false)
+    : transactionType(transType), address(addr), tag(str), data(dat), optype(NO_OPTYPE), isPIM(false)
 {
     rowBufferPolicy = PIMConfiguration::getRowBufferPolicy();
 }

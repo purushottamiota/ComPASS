@@ -29,8 +29,76 @@
  *********************************************************************************/
 
 #include "MemoryController.h"
+#include "PimActTiming.h"
 
 #include <iostream>
+#include <map>
+#include <utility>
+
+static std::map<std::pair<int, int>, uint64_t> g_b4Hist;
+static std::map<uint8_t, uint64_t> g_aaoHist;
+static uint8_t g_rowOptype[64];
+static uint64_t g_numActivate = 0;
+static uint64_t g_numPimAct = 0;
+static uint64_t g_numPrecharge = 0;
+static uint64_t g_numRead = 0;
+static uint64_t g_numWrite = 0;
+static uint64_t g_firstPim = UINT64_MAX;
+static uint64_t g_lastPim = 0;
+
+namespace DRAMSim
+{
+void resetGlobalCommandCounts()
+{
+    g_numActivate = 0;
+    g_numPimAct = 0;
+    g_numPrecharge = 0;
+    g_numRead = 0;
+    g_numWrite = 0;
+    g_firstPim = UINT64_MAX;
+    g_lastPim = 0;
+    g_b4Hist.clear();
+    g_aaoHist.clear();
+    for (int i = 0; i < 64; i++) g_rowOptype[i] = 0xFF;
+}
+
+void printGlobalCommandCounts(const std::string& label)
+{
+    std::cout << "[CMD-COUNTS] " << label
+              << " #ACT=" << g_numActivate
+              << " #PIM_ACT=" << g_numPimAct
+              << " #PRE=" << g_numPrecharge
+              << " #RD=" << g_numRead
+              << " #WR=" << g_numWrite
+              << std::endl;
+    uint64_t b4_total = 0;
+    for (auto& kv : g_b4Hist)
+    {
+        b4_total += kv.second;
+        std::cout << "[B4-HIST] " << label
+                  << " row_optype=" << kv.first.first
+                  << " pkt_optype=" << kv.first.second
+                  << " count=" << kv.second << std::endl;
+    }
+    std::cout << "[B4-HIST] " << label << " total=" << b4_total << std::endl;
+
+    uint64_t aao_total = 0;
+    for (auto& kv : g_aaoHist)
+    {
+        aao_total += kv.second;
+        std::cout << "[AAO-HIST] " << label
+                  << " optype=" << (int)kv.first
+                  << " count=" << kv.second << std::endl;
+    }
+    std::cout << "[AAO-HIST] " << label << " total=" << aao_total << std::endl;
+
+    std::cout << "[PIM-REGION] " << label
+              << " first=" << g_firstPim
+              << " last=" << g_lastPim
+              << " total=" << (g_lastPim >= g_firstPim ? (g_lastPim - g_firstPim + 1) : 0)
+              << std::endl;
+}
+}
 
 #include "AddressMapping.h"
 #include "MemorySystem.h"
@@ -168,6 +236,27 @@ void MemoryController::setBankStates(size_t rank, size_t bank, CurrentBankState 
 
 void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
 {
+    static const bool kTraceModeSwitch = getenv("PIM_TRACE_MODE_SWITCH") != nullptr;
+    if (poppedBusPacket)
+    {
+        const std::string& tg = poppedBusPacket->tag;
+        if (poppedBusPacket->isPIM || poppedBusPacket->busPacketType == PIM_ACT ||
+            tg.find("PARK_") != std::string::npos || tg.find("_TO_") != std::string::npos || tg.rfind("PIM", 0) == 0)
+        {
+            g_firstPim = std::min(g_firstPim, currentClockCycle);
+            g_lastPim = std::max(g_lastPim, currentClockCycle);
+        }
+
+        if (kTraceModeSwitch)
+        {
+            if (tg.find("SB_TO_HAB") != std::string::npos || tg.find("HAB_TO_SB") != std::string::npos ||
+                tg.find("PARK_") != std::string::npos || tg == "PIM" || tg.rfind("PIM", 0) == 0)
+            {
+                std::cerr << "[MODE-SWITCH] " << tg << " cycle=" << currentClockCycle << "\n";
+            }
+        }
+    }
+
     if (poppedBusPacket->busPacketType == WRITE)
     {
         writeDataToSend.push_back(new BusPacket(
@@ -185,6 +274,12 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
     switch (poppedBusPacket->busPacketType)
     {
         case READ:
+            g_numRead++;
+            if (poppedBusPacket->isPIM && (*ranks)[rank]->pimRank->isPIMACTMode() &&
+                poppedBusPacket->optype != g_rowOptype[rank])
+            {
+                g_b4Hist[{g_rowOptype[rank], poppedBusPacket->optype}]++;
+            }
             bankStates[rank][bank].nextPrecharge = max(currentClockCycle + config.READ_TO_PRE_DELAY,
                                                        bankStates[rank][bank].nextPrecharge);
             bankStates[rank][bank].lastCommand = READ;
@@ -214,6 +309,12 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
             break;
 
         case WRITE:
+            g_numWrite++;
+            if (poppedBusPacket->isPIM && (*ranks)[rank]->pimRank->isPIMACTMode() &&
+                poppedBusPacket->optype != g_rowOptype[rank])
+            {
+                g_b4Hist[{g_rowOptype[rank], poppedBusPacket->optype}]++;
+            }
             bankStates[rank][bank].nextPrecharge =
                 max(currentClockCycle + config.WRITE_TO_PRE_DELAY,
                     bankStates[rank][bank].nextPrecharge);
@@ -244,6 +345,7 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
             break;
 
         case ACTIVATE:
+            g_numActivate++;
             setBankStates(rank, bank, RowActive, ACTIVATE, 0,
                           max(currentClockCycle + config.tRC, bankStates[rank][bank].nextActivate));
             bankStates[rank][bank].openRowAddress = poppedBusPacket->row;
@@ -269,37 +371,35 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
 
         case PIM_ACT:
         {
-            uint64_t tRCD_val = (config.tRCDRD - config.AL) + 1;
-            uint64_t tRAS_val = config.tRAS + 1;
-            uint64_t tRC_val  = config.tRC + 1;
-
+            g_numPimAct++;
+            if (rank < 64)
+            {
+                g_rowOptype[rank] = poppedBusPacket->optype;
+            }
             if (AAO_ENABLED && isAAORegisterOp(poppedBusPacket->optype))
             {
-                tRCD_val = max((uint64_t)2, (uint64_t)(config.tRCDRD / 2));
-                tRAS_val = max((uint64_t)4, (uint64_t)((config.tRAS * 6) / 10));
-                tRC_val  = max((uint64_t)6, (uint64_t)((config.tRC * 6) / 10));
+                g_aaoHist[poppedBusPacket->optype]++;
             }
+            auto timing = pimActTiming(config, poppedBusPacket->optype, AAO_ENABLED);
 
             for (size_t b = 0; b < config.NUM_BANKS; b++)
             {
                 setBankStates(rank, b, RowActive, PIM_ACT, 0,
-                              max(currentClockCycle + tRC_val, bankStates[rank][b].nextActivate));
+                              max(currentClockCycle + timing.tRC, bankStates[rank][b].nextActivate));
                 bankStates[rank][b].openRowAddress = poppedBusPacket->row;
                 bankStates[rank][b].nextPrecharge =
-                    max(currentClockCycle + tRAS_val, bankStates[rank][b].nextPrecharge);
-                setBankStatesRW(rank, b, tRCD_val, tRCD_val);
+                    max(currentClockCycle + timing.tRAS, bankStates[rank][b].nextPrecharge);
+                setBankStatesRW(rank, b, timing.tRCD, timing.tRCDW);
             }
             break;
         }
 
         case PRECHARGE:
+            g_numPrecharge++;
             if ((*ranks)[rank]->pimRank->isPIMACTMode())
             {
-                uint64_t tRP_val = config.tRP;
-                if (AAO_ENABLED && isAAORegisterOp(poppedBusPacket->optype))
-                {
-                    tRP_val = max((uint64_t)2, (uint64_t)(config.tRP / 2));
-                }
+                uint8_t activeOpt = (*ranks)[rank]->pimRank->getActiveOptype();
+                uint64_t tRP_val = pimPrechargeTiming(config, activeOpt, AAO_ENABLED);
                 for (size_t b = 0; b < config.NUM_BANKS; b++)
                 {
                     setBankStates(rank, b, Precharging, PRECHARGE, tRP_val,
@@ -311,6 +411,7 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
                 setBankStates(rank, bank, Precharging, PRECHARGE, config.tRP,
                               max(currentClockCycle + config.tRP, bankStates[rank][bank].nextActivate));
             }
+            if (rank < 64) g_rowOptype[rank] = 0xFF;
             break;
 
         case REF:

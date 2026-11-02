@@ -1,0 +1,248 @@
+=======================================================
+ Step 3: 12-configuration ground-truth cycle matrix
+ Mon Nov  2 09:59:47 UTC 2026
+=======================================================
+Building (incremental)...
+scons: Reading SConscript files ...
+running with -j 16
+scons: done reading SConscript files.
+scons: Building targets ...
+scons: `.' is up to date.
+scons: done building targets.
+
+=== 1. BASELINE (standard HBM-PIM protocol, paper dims) ===
+
+--- MODE: Baseline (AAO=0) (AAO=0) ---
+Running filter: PIMKernelFixture.gemv_paper_4kx4k:PIMKernelFixture.add:PIMKernelFixture.mul_paper_2m:PIMKernelFixture.relu_paper_4m
+[CYCLES] add [baseline]  total_cycles=9626
+[CMD-COUNTS] add [baseline] #ACT=34304 #PIM_ACT=0 #PRE=34304 #RD=83968 #WR=139840
+[B4-HIST] add [baseline] total=0
+[AAO-HIST] add [baseline] total=0
+[PIM-REGION] add [baseline] first=4242 last=7549 total=3308
+[CYCLES] gemv_paper_4kx4k [baseline]  total_cycles=57923
+[CMD-COUNTS] gemv_paper_4kx4k [baseline] #ACT=42944 #PIM_ACT=0 #PRE=42944 #RD=137216 #WR=1066048
+[B4-HIST] gemv_paper_4kx4k [baseline] total=0
+[AAO-HIST] gemv_paper_4kx4k [baseline] total=0
+[PIM-REGION] gemv_paper_4kx4k [baseline] first=44283 last=57765 total=13483
+[CYCLES] mul_paper_2m [baseline]  total_cycles=19280
+[CMD-COUNTS] mul_paper_2m [baseline] #ACT=67264 #PIM_ACT=0 #PRE=67264 #RD=165888 #WR=279104
+[B4-HIST] mul_paper_2m [baseline] total=0
+[AAO-HIST] mul_paper_2m [baseline] total=0
+[PIM-REGION] mul_paper_2m [baseline] first=8482 last=14767 total=6286
+[CYCLES] relu_paper_4m [baseline]  total_cycles=25131
+[CMD-COUNTS] relu_paper_4m [baseline] #ACT=74432 #PIM_ACT=0 #PRE=74432 #RD=296960 #WR=295488
+[B4-HIST] relu_paper_4m [baseline] total=0
+[AAO-HIST] relu_paper_4m [baseline] total=0
+[PIM-REGION] relu_paper_4m [baseline] first=8482 last=16141 total=7660
+[  PASSED  ] 4 tests.
+[EXIT] Baseline (AAO=0) rc=0
+
+--- MODE: Baseline (AAO=1) (AAO=1) ---
+Running filter: PIMKernelFixture.gemv_paper_4kx4k:PIMKernelFixture.add:PIMKernelFixture.mul_paper_2m:PIMKernelFixture.relu_paper_4m
+[CYCLES] add [baseline]  total_cycles=9626
+[CMD-COUNTS] add [baseline] #ACT=34304 #PIM_ACT=0 #PRE=34304 #RD=83968 #WR=139840
+[B4-HIST] add [baseline] total=0
+[AAO-HIST] add [baseline] total=0
+[PIM-REGION] add [baseline] first=4242 last=7549 total=3308
+[CYCLES] gemv_paper_4kx4k [baseline]  total_cycles=57923
+[CMD-COUNTS] gemv_paper_4kx4k [baseline] #ACT=42944 #PIM_ACT=0 #PRE=42944 #RD=137216 #WR=1066048
+[B4-HIST] gemv_paper_4kx4k [baseline] total=0
+[AAO-HIST] gemv_paper_4kx4k [baseline] total=0
+[PIM-REGION] gemv_paper_4kx4k [baseline] first=44283 last=57765 total=13483
+[CYCLES] mul_paper_2m [baseline]  total_cycles=19280
+[CMD-COUNTS] mul_paper_2m [baseline] #ACT=67264 #PIM_ACT=0 #PRE=67264 #RD=165888 #WR=279104
+[B4-HIST] mul_paper_2m [baseline] total=0
+[AAO-HIST] mul_paper_2m [baseline] total=0
+[PIM-REGION] mul_paper_2m [baseline] first=8482 last=14767 total=6286
+[CYCLES] relu_paper_4m [baseline]  total_cycles=25131
+[CMD-COUNTS] relu_paper_4m [baseline] #ACT=74432 #PIM_ACT=0 #PRE=74432 #RD=296960 #WR=295488
+[B4-HIST] relu_paper_4m [baseline] total=0
+[AAO-HIST] relu_paper_4m [baseline] total=0
+[PIM-REGION] relu_paper_4m [baseline] first=8482 last=16141 total=7660
+[  PASSED  ] 4 tests.
+[EXIT] Baseline (AAO=1) rc=0
+(Sanity check: Baseline cycles under AAO=0 and AAO=1 must be identical)
+
+=== 2. PIM-ACT w/o AAO (AAO=0) ===
+
+--- MODE: PIM-ACT w/o AAO (AAO=0) ---
+Running filter: PIMKernelFixture.gemv_pim_act:PIMKernelFixture.add_pim_act:PIMKernelFixture.mul_pim_act:PIMKernelFixture.relu_pim_act
+[CYCLES] gemv_pim_act [PIM-ACT]  total_cycles=57567
+[CMD-COUNTS] gemv_pim_act [PIM-ACT] #ACT=33984 #PIM_ACT=6400 #PRE=40384 #RD=135168 #WR=1065472
+[B4-HIST] gemv_pim_act [PIM-ACT] total=0
+[AAO-HIST] gemv_pim_act [PIM-ACT] total=0
+[PIM-REGION] gemv_pim_act [PIM-ACT] first=44326 last=57384 total=13059
+[CYCLES] add_pim_act [PIM-ACT]  total_cycles=9468
+[CMD-COUNTS] add_pim_act [PIM-ACT] #ACT=28608 #PIM_ACT=3136 #PRE=31744 #RD=81920 #WR=139264
+[B4-HIST] add_pim_act [PIM-ACT] total=0
+[AAO-HIST] add_pim_act [PIM-ACT] total=0
+[PIM-REGION] add_pim_act [PIM-ACT] first=4279 last=7365 total=3087
+[CYCLES] mul_pim_act [PIM-ACT]  total_cycles=19194
+[CMD-COUNTS] mul_pim_act [PIM-ACT] #ACT=58368 #PIM_ACT=6208 #PRE=64576 #RD=163840 #WR=278528
+[B4-HIST] mul_pim_act [PIM-ACT] total=0
+[AAO-HIST] mul_pim_act [PIM-ACT] total=0
+[PIM-REGION] mul_pim_act [PIM-ACT] first=8515 last=14655 total=6141
+[CYCLES] relu_pim_act [PIM-ACT]  total_cycles=25809
+[CMD-COUNTS] relu_pim_act [PIM-ACT] #ACT=64384 #PIM_ACT=8256 #PRE=72640 #RD=294912 #WR=294912
+[B4-HIST] relu_pim_act [PIM-ACT] total=0
+[AAO-HIST] relu_pim_act [PIM-ACT] total=0
+[PIM-REGION] relu_pim_act [PIM-ACT] first=8515 last=16391 total=7877
+[  PASSED  ] 4 tests.
+[EXIT] PIM-ACT w/o AAO rc=0
+
+=== 3. PIM-ACT w/ AAO (AAO=1) ===
+
+--- MODE: PIM-ACT w/ AAO (AAO=1) ---
+Running filter: PIMKernelFixture.gemv_pim_act:PIMKernelFixture.add_pim_act:PIMKernelFixture.mul_pim_act:PIMKernelFixture.relu_pim_act
+[CYCLES] gemv_pim_act [PIM-ACT]  total_cycles=57189
+[CMD-COUNTS] gemv_pim_act [PIM-ACT] #ACT=33984 #PIM_ACT=6464 #PRE=40448 #RD=135168 #WR=1065472
+[B4-HIST] gemv_pim_act [PIM-ACT] total=0
+[AAO-HIST] gemv_pim_act [PIM-ACT] optype=32 count=2048
+[AAO-HIST] gemv_pim_act [PIM-ACT] total=2048
+[PIM-REGION] gemv_pim_act [PIM-ACT] first=44326 last=57006 total=12681
+[CYCLES] add_pim_act [PIM-ACT]  total_cycles=9468
+[CMD-COUNTS] add_pim_act [PIM-ACT] #ACT=28608 #PIM_ACT=3136 #PRE=31744 #RD=81920 #WR=139264
+[B4-HIST] add_pim_act [PIM-ACT] total=0
+[AAO-HIST] add_pim_act [PIM-ACT] total=0
+[PIM-REGION] add_pim_act [PIM-ACT] first=4279 last=7365 total=3087
+[CYCLES] mul_pim_act [PIM-ACT]  total_cycles=19194
+[CMD-COUNTS] mul_pim_act [PIM-ACT] #ACT=58368 #PIM_ACT=6208 #PRE=64576 #RD=163840 #WR=278528
+[B4-HIST] mul_pim_act [PIM-ACT] total=0
+[AAO-HIST] mul_pim_act [PIM-ACT] total=0
+[PIM-REGION] mul_pim_act [PIM-ACT] first=8515 last=14655 total=6141
+[CYCLES] relu_pim_act [PIM-ACT]  total_cycles=25809
+[CMD-COUNTS] relu_pim_act [PIM-ACT] #ACT=64384 #PIM_ACT=8256 #PRE=72640 #RD=294912 #WR=294912
+[B4-HIST] relu_pim_act [PIM-ACT] total=0
+[AAO-HIST] relu_pim_act [PIM-ACT] total=0
+[PIM-REGION] relu_pim_act [PIM-ACT] first=8515 last=16391 total=7877
+[  PASSED  ] 4 tests.
+[EXIT] PIM-ACT w/ AAO rc=0
+
+=== 4. A3 / Step 4: Cross-protocol correctness + cycle comparison ===
+
+--- MODE: A3 Cross-check (AAO=1) (AAO=1) ---
+Running filter: PIMKernelFixture.a3_*
+[CYCLES] gemv_4kx4k [baseline]  total_cycles=57923
+[CMD-COUNTS] gemv_4kx4k [baseline] #ACT=42944 #PIM_ACT=0 #PRE=42944 #RD=137216 #WR=1066048
+[B4-HIST] gemv_4kx4k [baseline] total=0
+[AAO-HIST] gemv_4kx4k [baseline] total=0
+[PIM-REGION] gemv_4kx4k [baseline] first=44283 last=57765 total=13483
+[CYCLES] gemv_4kx4k [PIM-ACT]  total_cycles=57189
+[CMD-COUNTS] gemv_4kx4k [PIM-ACT] #ACT=33984 #PIM_ACT=6464 #PRE=40448 #RD=135168 #WR=1065472
+[B4-HIST] gemv_4kx4k [PIM-ACT] total=0
+[AAO-HIST] gemv_4kx4k [PIM-ACT] optype=32 count=2048
+[AAO-HIST] gemv_4kx4k [PIM-ACT] total=2048
+[PIM-REGION] gemv_4kx4k [PIM-ACT] first=44326 last=57006 total=12681
+[A3-OK] gemv_4kx4k: baseline and PIM-ACT results are bitwise-identical (4096 bursts).
+[CYCLES] add_1m [baseline]  total_cycles=9626
+[CMD-COUNTS] add_1m [baseline] #ACT=34304 #PIM_ACT=0 #PRE=34304 #RD=83968 #WR=139840
+[B4-HIST] add_1m [baseline] total=0
+[AAO-HIST] add_1m [baseline] total=0
+[PIM-REGION] add_1m [baseline] first=4242 last=7549 total=3308
+[CYCLES] add_1m [PIM-ACT]  total_cycles=9468
+[CMD-COUNTS] add_1m [PIM-ACT] #ACT=28608 #PIM_ACT=3136 #PRE=31744 #RD=81920 #WR=139264
+[B4-HIST] add_1m [PIM-ACT] total=0
+[AAO-HIST] add_1m [PIM-ACT] total=0
+[PIM-REGION] add_1m [PIM-ACT] first=4279 last=7365 total=3087
+[A3-OK] add_1m: baseline and PIM-ACT results are bitwise-identical (65536 bursts).
+[CYCLES] mul_2m [baseline]  total_cycles=19280
+[CMD-COUNTS] mul_2m [baseline] #ACT=67264 #PIM_ACT=0 #PRE=67264 #RD=165888 #WR=279104
+[B4-HIST] mul_2m [baseline] total=0
+[AAO-HIST] mul_2m [baseline] total=0
+[PIM-REGION] mul_2m [baseline] first=8482 last=14767 total=6286
+[CYCLES] mul_2m [PIM-ACT]  total_cycles=19194
+[CMD-COUNTS] mul_2m [PIM-ACT] #ACT=58368 #PIM_ACT=6208 #PRE=64576 #RD=163840 #WR=278528
+[B4-HIST] mul_2m [PIM-ACT] total=0
+[AAO-HIST] mul_2m [PIM-ACT] total=0
+[PIM-REGION] mul_2m [PIM-ACT] first=8515 last=14655 total=6141
+[A3-OK] mul_2m: baseline and PIM-ACT results are bitwise-identical (131072 bursts).
+[CYCLES] relu_4m [baseline]  total_cycles=25131
+[CMD-COUNTS] relu_4m [baseline] #ACT=74432 #PIM_ACT=0 #PRE=74432 #RD=296960 #WR=295488
+[B4-HIST] relu_4m [baseline] total=0
+[AAO-HIST] relu_4m [baseline] total=0
+[PIM-REGION] relu_4m [baseline] first=8482 last=16141 total=7660
+[CYCLES] relu_4m [PIM-ACT]  total_cycles=25809
+[CMD-COUNTS] relu_4m [PIM-ACT] #ACT=64384 #PIM_ACT=8256 #PRE=72640 #RD=294912 #WR=294912
+[B4-HIST] relu_4m [PIM-ACT] total=0
+[AAO-HIST] relu_4m [PIM-ACT] total=0
+[PIM-REGION] relu_4m [PIM-ACT] first=8515 last=16391 total=7877
+[A3-OK] relu_4m: baseline and PIM-ACT results are bitwise-identical (262144 bursts).
+[  PASSED  ] 4 tests.
+[EXIT] A3 Cross-check (AAO=1) rc=0
+
+--- MODE: A3 Cross-check (AAO=0) (AAO=0) ---
+Running filter: PIMKernelFixture.a3_*
+[CYCLES] gemv_4kx4k [baseline]  total_cycles=57923
+[CMD-COUNTS] gemv_4kx4k [baseline] #ACT=42944 #PIM_ACT=0 #PRE=42944 #RD=137216 #WR=1066048
+[B4-HIST] gemv_4kx4k [baseline] total=0
+[AAO-HIST] gemv_4kx4k [baseline] total=0
+[PIM-REGION] gemv_4kx4k [baseline] first=44283 last=57765 total=13483
+[CYCLES] gemv_4kx4k [PIM-ACT]  total_cycles=57567
+[CMD-COUNTS] gemv_4kx4k [PIM-ACT] #ACT=33984 #PIM_ACT=6400 #PRE=40384 #RD=135168 #WR=1065472
+[B4-HIST] gemv_4kx4k [PIM-ACT] total=0
+[AAO-HIST] gemv_4kx4k [PIM-ACT] total=0
+[PIM-REGION] gemv_4kx4k [PIM-ACT] first=44326 last=57384 total=13059
+[A3-OK] gemv_4kx4k: baseline and PIM-ACT results are bitwise-identical (4096 bursts).
+[CYCLES] add_1m [baseline]  total_cycles=9626
+[CMD-COUNTS] add_1m [baseline] #ACT=34304 #PIM_ACT=0 #PRE=34304 #RD=83968 #WR=139840
+[B4-HIST] add_1m [baseline] total=0
+[AAO-HIST] add_1m [baseline] total=0
+[PIM-REGION] add_1m [baseline] first=4242 last=7549 total=3308
+[CYCLES] add_1m [PIM-ACT]  total_cycles=9468
+[CMD-COUNTS] add_1m [PIM-ACT] #ACT=28608 #PIM_ACT=3136 #PRE=31744 #RD=81920 #WR=139264
+[B4-HIST] add_1m [PIM-ACT] total=0
+[AAO-HIST] add_1m [PIM-ACT] total=0
+[PIM-REGION] add_1m [PIM-ACT] first=4279 last=7365 total=3087
+[A3-OK] add_1m: baseline and PIM-ACT results are bitwise-identical (65536 bursts).
+[CYCLES] mul_2m [baseline]  total_cycles=19280
+[CMD-COUNTS] mul_2m [baseline] #ACT=67264 #PIM_ACT=0 #PRE=67264 #RD=165888 #WR=279104
+[B4-HIST] mul_2m [baseline] total=0
+[AAO-HIST] mul_2m [baseline] total=0
+[PIM-REGION] mul_2m [baseline] first=8482 last=14767 total=6286
+[CYCLES] mul_2m [PIM-ACT]  total_cycles=19194
+[CMD-COUNTS] mul_2m [PIM-ACT] #ACT=58368 #PIM_ACT=6208 #PRE=64576 #RD=163840 #WR=278528
+[B4-HIST] mul_2m [PIM-ACT] total=0
+[AAO-HIST] mul_2m [PIM-ACT] total=0
+[PIM-REGION] mul_2m [PIM-ACT] first=8515 last=14655 total=6141
+[A3-OK] mul_2m: baseline and PIM-ACT results are bitwise-identical (131072 bursts).
+[CYCLES] relu_4m [baseline]  total_cycles=25131
+[CMD-COUNTS] relu_4m [baseline] #ACT=74432 #PIM_ACT=0 #PRE=74432 #RD=296960 #WR=295488
+[B4-HIST] relu_4m [baseline] total=0
+[AAO-HIST] relu_4m [baseline] total=0
+[PIM-REGION] relu_4m [baseline] first=8482 last=16141 total=7660
+[CYCLES] relu_4m [PIM-ACT]  total_cycles=25809
+[CMD-COUNTS] relu_4m [PIM-ACT] #ACT=64384 #PIM_ACT=8256 #PRE=72640 #RD=294912 #WR=294912
+[B4-HIST] relu_4m [PIM-ACT] total=0
+[AAO-HIST] relu_4m [PIM-ACT] total=0
+[PIM-REGION] relu_4m [PIM-ACT] first=8515 last=16391 total=7877
+[A3-OK] relu_4m: baseline and PIM-ACT results are bitwise-identical (262144 bursts).
+[  PASSED  ] 4 tests.
+[EXIT] A3 Cross-check (AAO=0) rc=0
+
+=======================================================
+ Summary of Extracted [CYCLES]:
+ Summary of Extracted [CYCLES]:
+[CYCLES] add [baseline]  total_cycles=9626
+[CYCLES] add_1m [PIM-ACT]  total_cycles=9468
+[CYCLES] add_1m [baseline]  total_cycles=9626
+[CYCLES] add_pim_act [PIM-ACT]  total_cycles=9468
+[CYCLES] gemv_4kx4k [PIM-ACT]  total_cycles=57189
+[CYCLES] gemv_4kx4k [PIM-ACT]  total_cycles=57567
+[CYCLES] gemv_4kx4k [baseline]  total_cycles=57923
+[CYCLES] gemv_paper_4kx4k [baseline]  total_cycles=57923
+[CYCLES] gemv_pim_act [PIM-ACT]  total_cycles=57189
+[CYCLES] gemv_pim_act [PIM-ACT]  total_cycles=57567
+[CYCLES] mul_2m [PIM-ACT]  total_cycles=19194
+[CYCLES] mul_2m [baseline]  total_cycles=19280
+[CYCLES] mul_paper_2m [baseline]  total_cycles=19280
+[CYCLES] mul_pim_act [PIM-ACT]  total_cycles=19194
+[CYCLES] relu_4m [PIM-ACT]  total_cycles=25809
+[CYCLES] relu_4m [baseline]  total_cycles=25131
+[CYCLES] relu_paper_4m [baseline]  total_cycles=25131
+[CYCLES] relu_pim_act [PIM-ACT]  total_cycles=25809
+=======================================================
+ Grep checklist:
+   [CYCLES]      -> see summary above
+   [A3-FAIL]     -> 0 mismatches
+   [B4-HIST]     -> 0 mismatch events
+=======================================================

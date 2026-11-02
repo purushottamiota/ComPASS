@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "tests/TestCases.h"
+#include "MemoryController.h"
 
 using namespace DRAMSim;
 
@@ -104,6 +105,7 @@ class PIMKernelFixture : public testing::Test
     virtual void SetUp()
     {
         printTestMessage();
+        resetGlobalCommandCounts();
     }
 
     virtual void TearDown()
@@ -294,6 +296,73 @@ class PIMKernelFixture : public testing::Test
         cout << "  simulated output comparison via pre-calculated values" << endl;
         cout << "> passed : " << testStats.getNumPassed() << endl;
         cout << "> failed : " << testStats.getNumFailed() << endl;
+    }
+
+    // -----------------------------------------------------------------------
+    // A3: Cross-protocol result comparison (Step 4 of correction plan)
+    // Verifies that baseline-protocol and PIM-ACT-protocol produce bitwise-
+    // identical FP16 outputs for the same kernel and data dimensions.
+    // Call this after running both getResultPIM() and getResultPIMACT() on
+    // the same DataDim, passing the two result arrays and their length.
+    // A mismatch here means the PIM-ACT schedule computes different values
+    // than the standard HBM-PIM schedule -- a correctness bug, not a timing bug.
+    // -----------------------------------------------------------------------
+    void verifyResultsMatch(const BurstType* baseline_result,
+                            const BurstType* pimact_result,
+                            unsigned num_bursts,
+                            const std::string& test_label = "")
+    {
+        unsigned mismatch_count = 0;
+        for (unsigned i = 0; i < num_bursts; i++)
+        {
+            for (int j = 0; j < 16; j++)
+            {
+                fp16 b = baseline_result[i].fp16Data_[j];
+                fp16 p = pimact_result[i].fp16Data_[j];
+                if (!fp16Equal(b, p, 4, 0.01))
+                {
+                    mismatch_count++;
+                    if (mismatch_count <= 5)  // cap verbose output
+                    {
+                        std::cerr << "[A3-MISMATCH] " << test_label
+                                  << "  burst[" << i << "][" << j << "]"
+                                  << "  baseline=" << convertH2F(b)
+                                  << "  pimact="   << convertH2F(p)
+                                  << std::endl;
+                    }
+                }
+            }
+        }
+        if (mismatch_count == 0)
+        {
+            std::cout << "[A3-OK] " << test_label
+                      << ": baseline and PIM-ACT results are bitwise-identical ("
+                      << num_bursts << " bursts)." << std::endl;
+        }
+        else
+        {
+            std::cerr << "[A3-FAIL] " << test_label
+                      << ": " << mismatch_count
+                      << " FP16 element mismatches found in " << num_bursts
+                      << " bursts." << std::endl;
+            // Propagate to GTest so the test shows FAIL
+            ADD_FAILURE() << "[A3] Baseline vs PIM-ACT result mismatch: "
+                          << mismatch_count << " elements differ.";
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // A3: Cycle reporter -- prints the kernel's total simulated cycle count
+    // with a label. Call after kernel->runPIM() to capture the ground-truth
+    // cycle count for the Step 3 12-config matrix.
+    // -----------------------------------------------------------------------
+    void reportCycles(shared_ptr<PIMKernel> kernel, const std::string& label)
+    {
+        std::cout << "[CYCLES] " << label
+                  << "  total_cycles=" << kernel->getCycle()
+                  << std::endl;
+        printGlobalCommandCounts(label);
+        resetGlobalCommandCounts();
     }
 };
 
