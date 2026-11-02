@@ -4,10 +4,14 @@
 > *"ComPASS: A Compatible PIM Protocol Architecture and Scheduling Solution for Processor-PIM Collaboration"* (MICRO 2025).
 
 This repository contains the complete end-to-end implementation, architectural enhancements, experimental validation, and novel contributions for the **ComPASS** architecture across two production-grade cycle-level simulators:
-1. **Samsung PIMSimulator**: Cycle-level PIM architecture modeling multi-bank `PIM-ACT` simultaneous activation, 35-optype ISA encoding (Table 1), $t_{RCD}+1$ penalty enforcement, and Architecture-Aware Optimization (AAO) reproducing Figure 7 speedups.
-2. **Ramulator**: Cycle-accurate memory simulator configured with 16 out-of-order CPU cores running SPEC CPU2006 workloads co-executing with PIM macro/micro-request streams over 4-channel LPDDR5-6400 DRAM, featuring FR-FCFS, Batch (PAR-BS), ST-BLC, AT-BLC, and our novel contribution **E-BLC** (Elastic Bank-Conflict Aware Balancer).
+1. **Samsung PIMSimulator (Part A)**: Cycle-level PIM architecture modeling multi-bank `PIM-ACT` simultaneous activation, 35-optype ISA encoding (Table 1), PREA-aware scheduling (§5.1), $352\text{ ns}$ mode-switch overhead elimination, and Architecture-Aware Optimization (AAO) reproducing Figure 7 speedups.
+2. **Ramulator (Part B)**: Cycle-accurate memory simulator configured with 16 out-of-order CPU cores running SPEC CPU2006 workloads co-executing with PIM macro/micro-request streams over 4-channel LPDDR5-6400 DRAM, featuring FR-FCFS, Batch (PAR-BS), ST-BLC, AT-BLC, and our novel contribution **E-BLC** (Elastic Bank-Conflict Aware Balancer).
 
-For the full architectural specification, paper inconsistency resolutions, and parameter choices, see [REPRODUCTION_SPEC.md](REPRODUCTION_SPEC.md).
+For detailed documentation, empirical reports, and protocol audits, see:
+- [docs/pimsimulator_results_and_changes.md](docs/pimsimulator_results_and_changes.md): Comprehensive Part A results, cycle matrices, B1–B10 fixes, and findings.
+- [docs/deviations.md](docs/deviations.md): Detailed protocol audit, PREA-aware scheduling analysis, and cycle decomposition.
+- [docs/compass_correction_doc.md](docs/compass_correction_doc.md): ComPASS protocol & timing verification roadmap.
+- [REPRODUCTION_SPEC.md](REPRODUCTION_SPEC.md): Formal reproduction specification, queueing parameters, and architectural details.
 
 ---
 
@@ -48,28 +52,30 @@ For the full architectural specification, paper inconsistency resolutions, and p
 
 ## Key Features & Reproduction Achievements
 
-### 1. Samsung PIMSimulator (`PIM-ACT`, AAO & Figure 7)
-- **`PIM-ACT` Command**: Extends standard DRAM command encoding to trigger simultaneous multi-bank activation paired with PIM arithmetic.
-- **Table 1 Full 35-Optype Encoding**:
-  - `MUL` (8 optypes: 0–7): FP16 element-wise multiplication across GRF_A, GRF_B, SRF.
-  - `ADD` (8 optypes: 8–15): FP16 element-wise vector addition.
-  - `MAD` (8 optypes: 16–23): Multiply-Add ($A \times B + C$) SIMD operations.
-  - `MAC` (2 optypes: 24–25): Multiply-Accumulate ($Acc \leftarrow Acc + A \times B$).
-  - `ReLU` (4 optypes: 26–29): Rectified linear unit activation ($\max(0, x)$).
-  - `MOV` (5 optypes: 32–36): Register and memory transfers (`MOV_GRF`, `MOV_SRF`, `MOV_BANK`, `MOV_CRF`, `MOV_OUT`).
-- **Timing Constraint Enforcement ($t_{RCD}+1$)**: Enforces the paper-mandated 1-cycle penalty ($t_{RCD,\text{PIM-ACT}} = t_{RCD} + 1$) on PIM-ACT multi-bank issuance.
-- **Architecture-Aware Optimization (AAO)**: Per-optype timing tables in `MemoryController.cpp` and `Rank.cpp` bypass DRAM bitline cell access delays for bank-local register ops ($t_{RCD} \times 0.50$, $t_{RAS} \times 0.60$, $t_{RP} \times 0.50$).
-- **Figure 7 Speedup Reproduction**:
-  - **GEMV**: $+2.54\%$
-  - **Vector ADD**: $+9.68\%$
-  - **Vector MUL**: $+7.20\%$
-  - **Vector ReLU**: $+8.40\%$
-  - Generated plots: `PIMSimulator/results/fig7_aao_speedup.png` and `.pdf`.
-- **Golden Reference Verification**:
-  - GEMV ($4096 \times 4096$): 4096 / 4096 passed (0 failures).
-  - Vector ADD ($1,048,576$): 1048576 / 1048576 passed (0 failures).
-  - Vector MUL ($2,097,152$): 2097152 / 2097152 passed (0 failures).
-  - Vector ReLU ($4,194,304$): 4194304 / 4194304 passed (0 failures).
+### 1. Samsung PIMSimulator (`PIM-ACT`, AAO & Part A Reproduction)
+- **`PIM-ACT` Protocol & Full 35-Optype ISA Encoding (Table 1)**:
+  - Extends standard DRAM command encoding to trigger simultaneous multi-bank activation paired with PIM arithmetic.
+  - Implements all 35 optypes: `MUL` (0–7), `ADD` (8–15), `MAD` (16–23), `MAC` (24–25), `ReLU` (26–29), and `MOV` (32–36).
+  - Explicit `NO_OPTYPE = 0xFF` sentinel prevents optype 0 (`OP_MUL_GRF_A_BANK`) from being misclassified as uninitialized.
+- **Protocol Fixes & Timing Precision (B1–B10)**:
+  - Corrected $t_{RAS}$ and $t_{RC}$ by eliminating an unjustified $+1$ cycle penalty, matching the simulator verifier.
+  - Enforced $t_{RCDWR}$ for PIM write commands and $t_{RCDRD}$ for read commands in `PimActTiming.h`.
+  - Routed active optype from `pimRank` during precharge to enable AAO $t_{RP}$ precharge halving.
+  - Gated mode-switch tracing (`PIM_TRACE_MODE_SWITCH`) and parameterized AAO scaling factors (`AAO_TRCD`, `AAO_TRAS`, `AAO_TRC`, `AAO_TRP`).
+- **PREA-Aware Scheduling Policy (§5.1)**:
+  - Inspects cross-bank command queues before precharging to keep open rows across the rank for pending row-hit requests.
+  - Slashes redundant `#PIM_ACT` activations by **80.5% (GEMV)**, **49.0% (ADD)**, **49.5% (MUL)**, and **49.6% (ReLU)** compared to naive per-bank precharging.
+- **Mode-Switch Overhead Verified ($351\text{--}352\text{ ns}$)**:
+  - Measured baseline transition across all six phases (`parkIn`, `SB->HAB`, `HAB->HAB_PIM`, compute, `HAB_PIM->HAB`, `HAB->SB`, `parkOut`) takes **$351\text{--}352\text{ ns}$**, perfectly matching the paper's reported *"about 350 ns"*.
+  - PIM-ACT eliminates 100% of these mode-switch transactions.
+- **Measurement Scope & Speedup Reproduction**:
+  - **GEMV ($4096 \times 4096$)**: Evaluated over the PIM compute region ($13,483$ cycles / $13.5\,\mu\text{s}$), **GEMV ($AAO=0$) achieves $+3.25\%$ speedup (vs $+2.54\%$ paper target)**, matching within **0.71 percentage points** (theoretical gain from eliminating one 351-cycle switch predicts $+2.67\%$, within **0.13 pp**). Whole-run speedup is $+0.62\%$ ($AAO=0$) / $+1.28\%$ ($AAO=1$) due to host preload timer dilution ($76.5\%$ of total runtime).
+  - **ADD ($1\text{M}$)**: Region gain $+7.16\%$ (whole-run $+1.67\%$).
+  - **MUL ($2\text{M}$)**: Region gain $+2.36\%$ (whole-run $+0.45\%$).
+  - **ReLU ($4\text{M}$)**: Region slowdown $-2.75\%$ (whole-run $-2.63\%$). **$63\%$ of the whole-run slowdown ($428$ cycles)** is caused by post-compute host readback row conflicts against open bank rows.
+- **Golden Reference & Baseline Invariance**:
+  - 100% bitwise FP16 agreement (`[A3-OK]`, 0 mismatches) across all paper kernels.
+  - Baseline cycle counts strictly preserved (GEMV: 57,923, ADD: 9,626, MUL: 19,280, ReLU: 25,131).
 
 ---
 
@@ -90,6 +96,30 @@ For the full architectural specification, paper inconsistency resolutions, and p
 ---
 
 ## Experimental Evaluation Results
+
+### 1. Samsung PIMSimulator Phase & Speedup Matrix
+
+Simulated on 64 PIM channels with 16 banks per rank (`system_hbm_64ch.ini`):
+
+| Benchmark | Mode | Preload | PIM Region | Readback | Total Cycles | Region Gain | Whole-Run Gain |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **GEMV (4K×4K)** | Baseline | 44,283 | 13,483 | 157 | **57,923** | — | — |
+| | PREA-Aware (AAO=0) | 44,326 | 13,059 | 182 | **57,567** | **+3.25%** | **+0.62%** |
+| | PREA-Aware (AAO=1) | 44,326 | 12,681 | 182 | **57,189** | **+6.32%** | **+1.28%** |
+| | Naive PREA (AAO=0) | 44,326 | 26,508 | 199 | **71,033** | −49.14% | −18.46% |
+| **ADD (1M)** | Baseline | 4,242 | 3,308 | 2,076 | **9,626** | — | — |
+| | PREA-Aware (AAO=0/1)| 4,279 | 3,087 | 2,102 | **9,468** | **+7.16%** | **+1.67%** |
+| | Naive PREA (AAO=0/1)| 4,279 | 4,818 | 2,505 | **11,602** | −31.34% | −17.03% |
+| **MUL (2M)** | Baseline | 8,482 | 6,286 | 4,512 | **19,280** | — | — |
+| | PREA-Aware (AAO=0/1)| 8,515 | 6,141 | 4,538 | **19,194** | **+2.36%** | **+0.45%** |
+| | Naive PREA (AAO=0/1)| 8,515 | 10,012 | 4,553 | **23,080** | −37.22% | −16.46% |
+| **ReLU (4M)** | Baseline | 8,482 | 7,660 | 8,989 | **25,131** | — | — |
+| | PREA-Aware (AAO=0/1)| 8,515 | 7,877 | 9,417 | **25,809** | **−2.75%** | **−2.63%** |
+| | Naive PREA (AAO=0/1)| 8,515 | 13,357 | 9,031 | **30,903** | −42.65% | −18.68% |
+
+---
+
+### 2. Ramulator Policy Evaluation Results
 
 Simulations executed on 16 out-of-order CPU cores with 16 SPEC CPU2006 memory traces co-executing with 262,144 PIM micro-operations ($65,536$ per channel):
 
@@ -118,36 +148,44 @@ Simulations executed on 16 out-of-order CPU cores with 16 SPEC CPU2006 memory tr
 ### Prerequisites
 - Linux or Windows WSL2 (Ubuntu 20.04/22.04+)
 - GCC / G++ 11+ with `-std=c++11` support
+- SCons (for PIMSimulator) and Make (for Ramulator)
 - Python 3.8+ with `numpy` and `matplotlib`
 
-### 1. Samsung PIMSimulator Verification & Figure 7
+### 1. Samsung PIMSimulator (Part A)
 ```bash
 cd PIMSimulator
 
-# Compile the simulator
-make -j$(nproc)
+# 1. Generate golden datasets (seed 1113)
+python3 data/generate_all_data.py
 
-# Run Google Test verification suite for PIM-ACT kernels
-./sim --gtest_filter=*pim_act*
+# 2. Compile with SCons
+scons NO_LIBRARY=1 -j$(nproc)
 
-# Run dual-protocol evaluation (Original vs PIM-ACT vs AAO) and reproduce Fig 7
-python3 evaluate_fig7.py
+# 3. Run headline PREA-aware 12-configuration evaluation matrix
+./run_step3_matrix.sh 2>&1 | tee results/step3_matrix/final.txt
+
+# 4. (Optional) Run legacy naive precharge matrix
+PIMACT_PREA_AWARE=0 ./run_step3_matrix.sh 2>&1 | tee results/step3_matrix/final_legacy_prea.txt
+
+# 5. Run mode-switch timestamp tracing & analysis
+PIM_TRACE_MODE_SWITCH=1 ./sim --gtest_filter="PIMKernelFixture.*" > results/mode_switch/raw_mode_switch.txt 2>&1
+python3 scripts/analyze_mode_switch.py results/mode_switch/raw_mode_switch.txt
 ```
 
-### 2. Ramulator Policy Evaluation & Parameter Sweeps
+### 2. Ramulator Policy Evaluation & Parameter Sweeps (Part B)
 ```bash
 cd ramulator
 
-# Compile the simulator
+# 1. Compile Ramulator
 make -j$(nproc)
 
-# Run full 6-policy evaluation suite and generate CSVs
+# 2. Run full 6-policy evaluation suite and generate CSVs
 python3 evaluate_policies.py
 
-# Generate publication-quality comparison charts (PNG and PDF)
+# 3. Generate publication-quality comparison charts (PNG and PDF)
 python3 plot_results.py
 
-# Run Figure 10-11 N:P ratio and sensitivity parameter sweeps
+# 4. Run Figure 10-11 N:P ratio and sensitivity parameter sweeps
 python3 parameter_sweep.py
 ```
 
@@ -157,29 +195,40 @@ python3 parameter_sweep.py
 
 ```
 ComPASS/
+├── docs/                                   # Detailed architectural and reproduction reports
+│   ├── pimsimulator_results_and_changes.md # Complete Part A report: results, fixes & findings
+│   ├── deviations.md                       # Protocol audit (B1–B10), PREA-aware & scope analysis
+│   └── compass_correction_doc.md           # Protocol & timing verification roadmap
 ├── REPRODUCTION_SPEC.md                    # Formal reproduction spec & paper inconsistency analysis
 ├── COMPASS_STUDY_GUIDE_AND_ARCHITECTURE.md # Detailed architecture study guide & line-by-line diffs
 ├── PROJECT_PROGRESS_AND_TODO.txt           # Master project log, file manifests & experimental logs
 ├── README.md                               # Root project documentation
-├── PIMSimulator/                           # Samsung PIMSimulator with PIM-ACT & AAO
+├── PIMSimulator/                           # Samsung PIMSimulator with PIM-ACT, AAO & PREA-Aware
 │   ├── data/                               # Dataset generation scripts (GEMV, ADD, MUL, ReLU)
 │   ├── src/                                # Multi-bank PIM-ACT engine, 35 optypes & AAO timing
-│   ├── evaluate_fig7.py                    # Figure 7 reproduction script (Original vs PIM-ACT vs AAO)
-│   └── results/                            # AAO baseline logs, CSVs, and Fig 7 PDF/PNG plots
+│   │   ├── PimActTiming.h                  # Parameterized AAO & write delay calculation
+│   │   ├── MemoryController.cpp            # Scheduling, PIM-REGION & diagnostic instrumentation
+│   │   ├── CommandQueue.cpp                # PREA-aware cross-bank scheduling policy
+│   │   └── Rank.cpp                        # Bank state tracking and timing verification
+│   ├── scripts/                            # Analysis scripts (analyze_mode_switch.py)
+│   ├── run_step3_matrix.sh                 # 12-configuration automated matrix runner
+│   └── results/                            # Matrix logs, mode-switch traces, and manifests
+│       ├── step3_matrix/                   # Ground-truth matrix logs (final.txt, README.md)
+│       └── mode_switch/                    # Raw 6-phase mode-switch logs & analysis tables
 └── ramulator/                              # Ramulator with ComPASS LPDDR5-6400, Balancers & E-BLC
     ├── configs/LPDDR5-PIM.cfg              # 16-core, 4-channel LPDDR5-6400 configuration
     ├── cputraces/16core_traces/            # 16 SPEC CPU2006 benchmark traces
     ├── evaluate_policies.py                # 6-policy automated co-execution evaluation script
     ├── parameter_sweep.py                  # Figure 10-11 N:P ratio parameter sweep script
     ├── plot_results.py                     # High-resolution chart plotting script (PDF & PNG)
-    ├── results/                            # Experimental stats files & evaluation plots
-    │   ├── summary_table.txt               # Plaintext summary table
-    │   ├── compass_evaluation_metrics.csv  # Raw summary metrics CSV
-    │   ├── per_channel_breakdown.csv       # Per-channel raw breakdown CSV
-    │   ├── parameter_sweep_np_ratio.csv    # Parameter sweep raw CSV
-    │   ├── atblc_N_timeline_ch0.csv        # Dynamic N(t) timeline log
-    │   ├── compass_evaluation_metrics.png/.pdf # 4-panel evaluation chart
-    │   ├── prea_and_qos_comparison.png/.pdf   # PREA overhead & QoS chart
-    │   ├── fig10_parameter_sweep.png/.pdf     # Fig 10-11 parameter sweep chart
-    │   └── atblc_N_adaptation.png/.pdf        # Dynamic N(t) timeline chart
+    └── results/                            # Experimental stats files & evaluation plots
+        ├── summary_table.txt               # Plaintext summary table
+        ├── compass_evaluation_metrics.csv  # Raw summary metrics CSV
+        ├── per_channel_breakdown.csv       # Per-channel raw breakdown CSV
+        ├── parameter_sweep_np_ratio.csv    # Parameter sweep raw CSV
+        ├── atblc_N_timeline_ch0.csv        # Dynamic N(t) timeline log
+        ├── compass_evaluation_metrics.png/.pdf # 4-panel evaluation chart
+        ├── prea_and_qos_comparison.png/.pdf   # PREA overhead & QoS chart
+        ├── fig10_parameter_sweep.png/.pdf     # Fig 10-11 parameter sweep chart
+        └── atblc_N_adaptation.png/.pdf        # Dynamic N(t) timeline chart
 ```
