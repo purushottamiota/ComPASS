@@ -43,6 +43,8 @@ static uint64_t g_numPimAct = 0;
 static uint64_t g_numPrecharge = 0;
 static uint64_t g_numRead = 0;
 static uint64_t g_numWrite = 0;
+static uint64_t g_firstPim = UINT64_MAX;
+static uint64_t g_lastPim = 0;
 
 namespace DRAMSim
 {
@@ -53,6 +55,8 @@ void resetGlobalCommandCounts()
     g_numPrecharge = 0;
     g_numRead = 0;
     g_numWrite = 0;
+    g_firstPim = UINT64_MAX;
+    g_lastPim = 0;
     g_b4Hist.clear();
     g_aaoHist.clear();
     for (int i = 0; i < 64; i++) g_rowOptype[i] = 0xFF;
@@ -87,6 +91,12 @@ void printGlobalCommandCounts(const std::string& label)
                   << " count=" << kv.second << std::endl;
     }
     std::cout << "[AAO-HIST] " << label << " total=" << aao_total << std::endl;
+
+    std::cout << "[PIM-REGION] " << label
+              << " first=" << g_firstPim
+              << " last=" << g_lastPim
+              << " total=" << (g_lastPim >= g_firstPim ? (g_lastPim - g_firstPim + 1) : 0)
+              << std::endl;
 }
 }
 
@@ -227,13 +237,23 @@ void MemoryController::setBankStates(size_t rank, size_t bank, CurrentBankState 
 void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
 {
     static const bool kTraceModeSwitch = getenv("PIM_TRACE_MODE_SWITCH") != nullptr;
-    if (kTraceModeSwitch && poppedBusPacket)
+    if (poppedBusPacket)
     {
-        const std::string& t = poppedBusPacket->tag;
-        if (t.find("SB_TO_HAB") != std::string::npos || t.find("HAB_TO_SB") != std::string::npos ||
-            t.find("PARK_") != std::string::npos || t == "PIM" || t.rfind("PIM", 0) == 0)
+        const std::string& tg = poppedBusPacket->tag;
+        if (poppedBusPacket->isPIM || poppedBusPacket->busPacketType == PIM_ACT ||
+            tg.find("PARK_") != std::string::npos || tg.find("_TO_") != std::string::npos || tg.rfind("PIM", 0) == 0)
         {
-            std::cerr << "[MODE-SWITCH] " << t << " cycle=" << currentClockCycle << "\n";
+            g_firstPim = std::min(g_firstPim, currentClockCycle);
+            g_lastPim = std::max(g_lastPim, currentClockCycle);
+        }
+
+        if (kTraceModeSwitch)
+        {
+            if (tg.find("SB_TO_HAB") != std::string::npos || tg.find("HAB_TO_SB") != std::string::npos ||
+                tg.find("PARK_") != std::string::npos || tg == "PIM" || tg.rfind("PIM", 0) == 0)
+            {
+                std::cerr << "[MODE-SWITCH] " << tg << " cycle=" << currentClockCycle << "\n";
+            }
         }
     }
 

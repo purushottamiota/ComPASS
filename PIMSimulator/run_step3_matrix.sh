@@ -42,7 +42,7 @@ run_mode() {
     
     # Run simulator with AAO env var, capturing output
     AAO="$aao" "$SIM" --gtest_filter="$filter" 2>&1 | tee -a "$LOG" | \
-        grep -E "^\[CYCLES\]|\[CMD-COUNTS\]|\[B4-HIST\]|\[AAO-HIST\]|\[A3-(OK|FAIL|MISMATCH)\]|PASSED|FAILED|rror" || true
+        grep -E "^\[CYCLES\]|\[CMD-COUNTS\]|\[B4-HIST\]|\[AAO-HIST\]|\[PIM-REGION\]|\[A3-(OK|FAIL|MISMATCH)\]|PASSED|FAILED|rror" || true
     echo "[EXIT] $label rc=${PIPESTATUS[0]}" | tee -a "$LOG"
 }
 
