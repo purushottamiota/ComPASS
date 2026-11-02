@@ -7,11 +7,10 @@ This repository contains the complete end-to-end implementation, architectural e
 1. **Samsung PIMSimulator (Part A)**: Cycle-level PIM architecture modeling multi-bank `PIM-ACT` simultaneous activation, 35-optype ISA encoding (Table 1), PREA-aware scheduling (§5.1), $352\text{ ns}$ mode-switch overhead elimination, and Architecture-Aware Optimization (AAO) reproducing Figure 7 speedups.
 2. **Ramulator (Part B)**: Cycle-accurate memory simulator configured with 16 out-of-order CPU cores running SPEC CPU2006 workloads co-executing with PIM macro/micro-request streams over 4-channel LPDDR5-6400 DRAM, featuring FR-FCFS, Batch (PAR-BS), ST-BLC, AT-BLC, and our novel contribution **E-BLC** (Elastic Bank-Conflict Aware Balancer).
 
-For detailed documentation, empirical reports, and protocol audits, see:
-- [docs/pimsimulator_results_and_changes.md](docs/pimsimulator_results_and_changes.md): Comprehensive Part A results, cycle matrices, B1–B10 fixes, and findings.
-- [docs/deviations.md](docs/deviations.md): Detailed protocol audit, PREA-aware scheduling analysis, and cycle decomposition.
-- [docs/compass_correction_doc.md](docs/compass_correction_doc.md): ComPASS protocol & timing verification roadmap.
+For detailed architectural specifications, parameter choices, and paper inconsistency resolutions, see:
 - [REPRODUCTION_SPEC.md](REPRODUCTION_SPEC.md): Formal reproduction specification, queueing parameters, and architectural details.
+- [COMPASS_STUDY_GUIDE_AND_ARCHITECTURE.md](COMPASS_STUDY_GUIDE_AND_ARCHITECTURE.md): Architectural study guide, memory controller models, and line-by-line diffs.
+- [docs/deviations.md](docs/deviations.md): Architectural deviations, timing parameters, and measurement scope analysis.
 
 ---
 
@@ -57,8 +56,8 @@ For detailed documentation, empirical reports, and protocol audits, see:
   - Extends standard DRAM command encoding to trigger simultaneous multi-bank activation paired with PIM arithmetic.
   - Implements all 35 optypes: `MUL` (0–7), `ADD` (8–15), `MAD` (16–23), `MAC` (24–25), `ReLU` (26–29), and `MOV` (32–36).
   - Explicit `NO_OPTYPE = 0xFF` sentinel prevents optype 0 (`OP_MUL_GRF_A_BANK`) from being misclassified as uninitialized.
-- **Protocol Fixes & Timing Precision (B1–B10)**:
-  - Corrected $t_{RAS}$ and $t_{RC}$ by eliminating an unjustified $+1$ cycle penalty, matching the simulator verifier.
+- **DRAM Timing Constraints & Latency Modeling**:
+  - Calibrated $t_{RAS}$ and $t_{RC}$ to standard DRAM bank cycle constraints, eliminating extraneous latency penalties.
   - Enforced $t_{RCDWR}$ for PIM write commands and $t_{RCDRD}$ for read commands in `PimActTiming.h`.
   - Routed active optype from `pimRank` during precharge to enable AAO $t_{RP}$ precharge halving.
   - Gated mode-switch tracing (`PIM_TRACE_MODE_SWITCH`) and parameterized AAO scaling factors (`AAO_TRCD`, `AAO_TRAS`, `AAO_TRC`, `AAO_TRP`).
@@ -195,10 +194,8 @@ python3 parameter_sweep.py
 
 ```
 ComPASS/
-├── docs/                                   # Detailed architectural and reproduction reports
-│   ├── pimsimulator_results_and_changes.md # Complete Part A report: results, fixes & findings
-│   ├── deviations.md                       # Protocol audit (B1–B10), PREA-aware & scope analysis
-│   └── compass_correction_doc.md           # Protocol & timing verification roadmap
+├── docs/                                   # Architectural deviations & technical documentation
+│   └── deviations.md                       # Protocol deviations, PREA-aware & scope analysis
 ├── REPRODUCTION_SPEC.md                    # Formal reproduction spec & paper inconsistency analysis
 ├── COMPASS_STUDY_GUIDE_AND_ARCHITECTURE.md # Detailed architecture study guide & line-by-line diffs
 ├── PROJECT_PROGRESS_AND_TODO.txt           # Master project log, file manifests & experimental logs
