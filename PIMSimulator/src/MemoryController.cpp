@@ -36,6 +36,7 @@
 #include <utility>
 
 static std::map<std::pair<int, int>, uint64_t> g_b4Hist;
+static std::map<uint8_t, uint64_t> g_aaoHist;
 static uint8_t g_rowOptype[64];
 static uint64_t g_numActivate = 0;
 static uint64_t g_numPimAct = 0;
@@ -53,6 +54,7 @@ void resetGlobalCommandCounts()
     g_numRead = 0;
     g_numWrite = 0;
     g_b4Hist.clear();
+    g_aaoHist.clear();
     for (int i = 0; i < 64; i++) g_rowOptype[i] = 0xFF;
 }
 
@@ -75,6 +77,16 @@ void printGlobalCommandCounts(const std::string& label)
                   << " count=" << kv.second << std::endl;
     }
     std::cout << "[B4-HIST] " << label << " total=" << b4_total << std::endl;
+
+    uint64_t aao_total = 0;
+    for (auto& kv : g_aaoHist)
+    {
+        aao_total += kv.second;
+        std::cout << "[AAO-HIST] " << label
+                  << " optype=" << (int)kv.first
+                  << " count=" << kv.second << std::endl;
+    }
+    std::cout << "[AAO-HIST] " << label << " total=" << aao_total << std::endl;
 }
 }
 
@@ -214,10 +226,14 @@ void MemoryController::setBankStates(size_t rank, size_t bank, CurrentBankState 
 
 void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
 {
-    if (poppedBusPacket && (poppedBusPacket->tag.find("SB_TO_HAB") != std::string::npos ||
-                            poppedBusPacket->tag.find("HAB_TO_SB") != std::string::npos))
+    if (poppedBusPacket)
     {
-        std::cerr << "[MODE-SWITCH] " << poppedBusPacket->tag << " cycle=" << currentClockCycle << "\n";
+        const std::string& t = poppedBusPacket->tag;
+        if (t.find("SB_TO_HAB") != std::string::npos || t.find("HAB_TO_SB") != std::string::npos ||
+            t.find("PARK_") != std::string::npos || t == "PIM" || t.rfind("PIM", 0) == 0)
+        {
+            std::cerr << "[MODE-SWITCH] " << t << " cycle=" << currentClockCycle << "\n";
+        }
     }
 
     if (poppedBusPacket->busPacketType == WRITE)
@@ -338,6 +354,10 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
             if (rank < 64)
             {
                 g_rowOptype[rank] = poppedBusPacket->optype;
+            }
+            if (AAO_ENABLED && isAAORegisterOp(poppedBusPacket->optype))
+            {
+                g_aaoHist[poppedBusPacket->optype]++;
             }
             auto timing = pimActTiming(config, poppedBusPacket->optype, AAO_ENABLED);
 

@@ -45,3 +45,4 @@ _sconsign.dblite
 step3_results.txt
 data/*/*.npy
 googletest/
+mode_switch_run.log
