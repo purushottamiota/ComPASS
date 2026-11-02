@@ -1,0 +1,16 @@
+[ RUN      ] PIMKernelFixture.gemv_pim_act
+>>PIM Kernel Accuraccy Test
+  Weight data dimension : 4096x4096
+  Input data dimension : 4096
+  Output data dimension : 4096
+[CYCLES] gemv_pim_act [PIM-ACT]  total_cycles=57189
+[CMD-COUNTS] gemv_pim_act [PIM-ACT] #ACT=33984 #PIM_ACT=6464 #PRE=40448 #RD=135168 #WR=1065472
+[B4-HIST] gemv_pim_act [PIM-ACT] total=0
+[AAO-HIST] gemv_pim_act [PIM-ACT] optype=32 count=2048
+[AAO-HIST] gemv_pim_act [PIM-ACT] total=2048
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 4096
+> failed : 0
+[       OK ] PIMKernelFixture.gemv_pim_act (25798 ms)

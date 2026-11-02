@@ -1,0 +1,13 @@
+[ RUN      ] PIMKernelFixture.add_pim_act
+>>PIM Kernel Accuraccy Test
+  Input/output data dimension : 1048576
+[CYCLES] add_pim_act [PIM-ACT]  total_cycles=9468
+[CMD-COUNTS] add_pim_act [PIM-ACT] #ACT=28608 #PIM_ACT=3136 #PRE=31744 #RD=81920 #WR=139264
+[B4-HIST] add_pim_act [PIM-ACT] total=0
+[AAO-HIST] add_pim_act [PIM-ACT] total=0
+
+> Test Result
+  simulated output comparison via pre-calculated values
+> passed : 1048576
+> failed : 0
+[       OK ] PIMKernelFixture.add_pim_act (2777 ms)

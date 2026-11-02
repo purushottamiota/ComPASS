@@ -226,7 +226,8 @@ void MemoryController::setBankStates(size_t rank, size_t bank, CurrentBankState 
 
 void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
 {
-    if (poppedBusPacket)
+    static const bool kTraceModeSwitch = getenv("PIM_TRACE_MODE_SWITCH") != nullptr;
+    if (kTraceModeSwitch && poppedBusPacket)
     {
         const std::string& t = poppedBusPacket->tag;
         if (t.find("SB_TO_HAB") != std::string::npos || t.find("HAB_TO_SB") != std::string::npos ||

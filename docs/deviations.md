@@ -89,26 +89,28 @@ Data extracted directly from `results/step3_matrix/final.txt` (Headline: PREA-Aw
 - ReLU remains 2.63% slower than baseline under PIM-ACT.
 - While PREA-aware scheduling rescues GEMV, ADD, and MUL from a ~16–18% deficit into slight gains (+0.45% to +1.67%), the gains fall 8–11 percentage points short of the paper's claimed speedups.
 - **AAO Measurement:** Runtime instrumentation (`[AAO-HIST]`) reveals that:
-  - In GEMV, `OP_MOV_HOST_TO_RF` (optype 32) fires 2,048 times out of 6,464 `PIM_ACT` commands, reducing execution by 378 cycles (+0.66 percentage points).
+  - In GEMV, `OP_MOV_HOST_TO_RF` (optype 32) fires 2,048 times out of 6,464 `PIM_ACT` commands, which is consistent with the 378-cycle gain (+0.66 percentage points).
   - In ADD, MUL, and ReLU, `[AAO-HIST]` confirmed exactly 0 activations trigger the AAO branch. In these kernels, all operations access DRAM banks (`OP_ADD_GRF_A_BANK`, `OP_MUL_GRF_A_BANK`, `OP_RELU_GRF_A`), which require standard bitline activation and restoration rather than shortened register-only timing.
 
 ---
 
 ## 6. Headline Policy: PREA-Aware Scheduling (§5.1)
 
-### 6.1 Mechanism & Implementation
-In naive PIM-ACT scheduling, when any single bank becomes idle, it issues a rank-wide `PRECHARGE` that closes open rows across all 16 banks in the rank simultaneously. If other banks have pending requests on their currently open row, this premature precharge forces them to incur unnecessary subsequent `PIM_ACT` activations.
+### 6.1 Paper §5.1 Specification vs Implementation
+The paper's §5.1 states that PREA is required only when the row address or optype changes, and that successive same-row, same-optype PIM requests are row hits that do not need repeated activation or precharging.
 
-To address this, our implementation of PREA-Aware scheduling in `CommandQueue::process_precharge()`:
+In naive PIM-ACT scheduling, when any single bank finishes its queue and becomes idle, it issues a rank-wide `PRECHARGE` that closes open rows across all 16 banks in the rank simultaneously. If other banks have pending requests on their currently open row, this premature rank-wide precharge closes an open row that is still needed, forcing subsequent redundant `PIM_ACT` activations.
+
+To implement the behavior described in §5.1, our implementation in `CommandQueue::process_precharge()`:
 1. When a bank requests a rank-wide `PRECHARGE` in PIM-ACT mode, the scheduler scans all 16 bank queues in the rank.
-2. If any other bank in the rank has a pending command matching its currently open row address, the rank-wide precharge is suppressed, keeping the row open.
+2. If any other bank in the rank has a pending command matching its currently open row address, the rank-wide precharge is suppressed, keeping the row open across the rank for successive same-row hits.
 3. The queue scan stops early if it encounters a barrier-tagged packet (`BAR`), preventing cross-barrier command reordering.
 4. The scan is optype-agnostic.
 
 ### 6.2 Configuration & Selection
 - **Flag Name:** `PIMACT_PREA_AWARE`.
-- **Initialization:** Evaluated once at startup using a `static const bool prea_aware_enabled` in `CommandQueue.cpp:334` to prevent per-cycle `getenv()` overhead.
-- **Default:** `true` (enabled), faithful to our reading of Paper §5.1.
+- **Initialization:** Evaluated once at startup using a `static const bool prea_aware_enabled` in `CommandQueue::process_precharge` to prevent per-cycle `getenv()` overhead.
+- **Default:** `true` (enabled), faithful to Paper §5.1.
 - **Legacy Selection:** Setting `PIMACT_PREA_AWARE=0` selects the legacy naive per-bank precharge policy.
 
 ### 6.3 Effect on Command Counts (from Verified Logs)
@@ -124,9 +126,11 @@ To address this, our implementation of PREA-Aware scheduling in `CommandQueue::p
 | **ReLU** | Naive PREA | 16,384 | 79,872 | — | — |
 | | PREA-Aware | 8,256 | 72,640 | **−8,128 (−49.6%)** | **−7,232 (−9.1%)** |
 
+*Note on non-PIM commands:* Under PREA-aware scheduling, normal `#ACT` counts also shifted: in ReLU, normal `#ACT` rose slightly from 63,488 to 64,384 (+896), while in ADD, normal `#ACT` dropped from 29,632 to 28,608 (−1,024). This indicates that keeping rows open across the rank alters the scheduling interleaving of non-PIM transactions as well.
+
 ### 6.4 Caveats & Clarification
-- **Optype-Agnostic Caveat:** Because the scan checks row matching without checking optype matching, it could theoretically keep a row open for a subsequent packet requiring a different optype. However, runtime diagnostics confirmed `[B4-HIST] total=0` across all kernels, proving no intra-row optype collisions occur in paper workloads.
-- **Reading of Paper §5.1:** This mechanism represents our reading of the paper's §5.1 concept of coordinating precharges across banks to hide latency, rather than an explicit algorithm detailed in the paper text.
+- **Optype-Agnostic Caveat:** Because the scan checks row matching without checking optype matching, it could theoretically keep a row open for a subsequent packet requiring a different optype. However, runtime diagnostics measured 0 events at issue time for these four kernels under this scheduler (`[B4-HIST] total=0`).
+- **Reading of Paper §5.1:** This mechanism represents our implementation of the paper's §5.1 principle that same-row accesses should be preserved as row hits without premature precharge, rather than an explicit scheduling algorithm detailed in the paper text.
 
 ---
 
@@ -137,27 +141,25 @@ The paper (§3) notes that conventional HBM-PIM incurs significant latency switc
 ### 7.1 Anatomy of Baseline Mode Switching
 In `PIMKernel.cpp`, the baseline protocol executes mode switches through distinct phases:
 1. `parkIn()`: Issues a barrier, reads special row $(1 \ll 13)$ across every bank in the rank (`START_PARK_IN_` ... `END_PARK_IN_`), followed by a barrier.
-2. `changePIMMode(SB -> HAB)`: Issues 4 MRS writes (`START_SB_TO_HAB_` ... `END_SB_TO_HAB_`) configuring HAB (all-bank) mode, followed by a barrier.
+2. `changePIMMode(SB -> HAB)`: Issues 4 command sequences to reserved rows (`START_SB_TO_HAB_` ... `END_SB_TO_HAB_`) configuring HAB (all-bank) mode, followed by a barrier.
 3. `changePIMMode(HAB -> HAB_PIM)`: Issues a write tagged `PIM` to register `pim_reg_ra_` to reset the program counter, followed by a barrier.
 4. **Kernel Compute:** Execution of compute tiles.
 5. `changePIMMode(HAB_PIM -> HAB)`: Issues a write tagged `PIM` to register `pim_reg_ra_`, followed by a barrier.
-6. `changePIMMode(HAB -> SB)`: Issues 2 MRS writes (`START_HAB_TO_SB` ... `END_HAB_TO_SB`) returning to Standard Bank mode, followed by a barrier.
+6. `changePIMMode(HAB -> SB)`: Issues 2 command sequences to reserved rows (`START_HAB_TO_SB` ... `END_HAB_TO_SB`) returning to Standard Bank mode, followed by a barrier.
 7. `parkOut()`: Reads special row across every bank (`START_PARK_OUT_` ... `END_PARK_OUT_`), followed by a barrier.
 
 ### 7.2 Measured Mode-Switch Windows (Baseline Kernels)
 
 Instrumenting `MemoryController::updateCommandQueue` with tag filters across all mode-switch packets yielded the following exact timings (1 GHz clock $\implies$ 1 cycle = 1 ns):
 
-| Window | Events Tagged | Cycle Interval (ADD) | Duration (ADD) | Cycle Interval (GEMV) | Duration (GEMV) | Cycle Interval (MUL/ReLU) | Duration (MUL/ReLU) | Packets |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **parkIn()** | `PARK_IN_` | [4242, 4329] | 88 cycles | [44283, 44369] | 87 cycles | [8482, 8568] | 87 cycles | 2048 |
-| **SB $\rightarrow$ HAB** | `SB_TO_HAB_` | [4319, 4359] | 41 cycles | [44359, 44399] | 41 cycles | [8558, 8598] | 41 cycles | 256 |
-| **HAB $\rightarrow$ HAB_PIM** | `PIM` (Burst 1) | [4399, 4409] | 11 cycles | [44439, 44449] | 11 cycles | [8638, 8648] | 11 cycles | 128 |
-| **HAB_PIM $\rightarrow$ HAB** | `PIM` (Burst 2) | [7366, 7376] | 11 cycles | [57582, 57592] | 11 cycles | [14584, 14594]* | 11 cycles | 128 |
-| **HAB $\rightarrow$ SB** | `HAB_TO_SB` | [7416, 7437] | 22 cycles | [57632, 57653] | 22 cycles | [14634, 14655]* | 22 cycles | 256 |
-| **parkOut()** | `PARK_OUT_` | [7464, 7549] | 86 cycles | [57680, 57765] | 86 cycles | [14682, 14767]* | 86 cycles | 2048 |
-
-*\*Note: In ReLU, exit phase starts at cycle 15,958 with identical per-window durations.*
+| Window | Events Tagged | ADD Interval | ADD Duration | GEMV Interval | GEMV Duration | MUL Interval | MUL Duration | ReLU Interval | ReLU Duration | Packets |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **parkIn()** | `PARK_IN_` | [4242, 4329] | 88 cycles | [44283, 44369] | 87 cycles | [8482, 8568] | 87 cycles | [8482, 8568] | 87 cycles | 2048 |
+| **SB $\rightarrow$ HAB** | `SB_TO_HAB_` | [4319, 4359] | 41 cycles | [44359, 44399] | 41 cycles | [8558, 8598] | 41 cycles | [8558, 8598] | 41 cycles | 256 |
+| **HAB $\rightarrow$ HAB_PIM** | `PIM` (Burst 1) | [4399, 4409] | 11 cycles | [44439, 44449] | 11 cycles | [8638, 8648] | 11 cycles | [8638, 8648] | 11 cycles | 128 |
+| **HAB_PIM $\rightarrow$ HAB** | `PIM` (Burst 2) | [7366, 7376] | 11 cycles | [57582, 57592] | 11 cycles | [14584, 14594] | 11 cycles | [15958, 15968] | 11 cycles | 128 |
+| **HAB $\rightarrow$ SB** | `HAB_TO_SB` | [7416, 7437] | 22 cycles | [57632, 57653] | 22 cycles | [14634, 14655] | 22 cycles | [16008, 16029] | 22 cycles | 256 |
+| **parkOut()** | `PARK_OUT_` | [7464, 7549] | 86 cycles | [57680, 57765] | 86 cycles | [14682, 14767] | 86 cycles | [16056, 16141] | 86 cycles | 2048 |
 
 ### 7.3 Entry, Exit, and Full Round-Trip Overhead
 
@@ -183,23 +185,50 @@ Inspection of `executeGemvPIMACT` and `executeEltwisePIMACT` in `PIMKernel.cpp` 
 - Runtime logs confirm exactly **0** mode-switch events during PIM-ACT kernel execution.
 - Therefore, PIM-ACT removes the entirety of the 351–352 ns baseline mode-switch overhead.
 
-### 7.5 Potential Speedup from Mode-Switch Elimination
+### 7.5 Potential Speedup and Cycle Decomposition
 
-Because each benchmark in the simulation harness runs as a single contiguous compute payload flanked by exactly one entry and exit switch, the maximum speedup achievable strictly by eliminating mode switches is bounded by:
+Using the definition $\text{Speedup} = \text{Baseline} / (\text{Baseline} - \text{Switch Removed}) - 1$:
 
-$$\text{Mode Switch Fraction} = \frac{\text{Saved Switch Cycles}}{\text{Baseline Cycles}} = \frac{351\text{--}352}{\text{Baseline Cycles}}$$
-
-| Kernel | Baseline Cycles | Mode Switch Cycles | Potential Speedup from Mode Switches | Paper Claimed Speedup (AAO=0 / AAO=1) |
+| Kernel | Baseline Cycles | Mode Switch Cycles | Potential Speedup strictly from Switch Elimination | Paper Claimed Speedup (AAO=0 / AAO=1) |
 |:---|:---:|:---:|:---:|:---:|
 | **GEMV** | 57,923 | 351 | **0.61%** | +2.54% / +9.65% |
-| **ADD**  | 9,626  | 352 | **3.66%** | +9.68% / +10.00% |
-| **MUL**  | 19,280 | 351 | **1.82%** | +11.38% / +11.53% |
-| **ReLU** | 25,131 | 351 | **1.40%** | +4.51% / +4.65% |
+| **ADD**  | 9,626  | 352 | **3.80%** | +9.68% / +10.00% |
+| **MUL**  | 19,280 | 351 | **1.85%** | +11.38% / +11.53% |
+| **ReLU** | 25,131 | 351 | **1.42%** | +4.51% / +4.65% |
 
-**Architectural Hypothesis:**
-Even after accounting for the complete 351–352 ns mode switch round trip (including park-in, park-out, and barriers), mode-switch elimination can contribute at most 0.61%–3.66% speedup to these workloads.
+#### Cycle Decomposition: Mode Switch vs Implied PIM-ACT Overhead
 
-*Hypothesis:* The paper's claimed $\sim 10\%$ speedups may assume an evaluation environment where fine-grained mode switches occur frequently between host and PIM execution (e.g. dozens of round trips interspersed between fine-grained host memory accesses and short PIM bursts), amortizing a smaller compute payload against each 350 ns round trip. In this simulator's benchmark harness, each kernel runs as a single contiguous compute block with exactly one entry and one exit switch, so mode-switch elimination cannot yield the paper's headline numbers.
+Comparing the cycles saved by headline PIM-ACT ($AAO=0$) against the mode-switch latency it removes:
+
+| Kernel | Switch Removed | Net Cycles Saved | Implied PIM-ACT Overhead |
+|:---|:---:|:---:|:---:|
+| **GEMV** | 351 | 356 | **$\approx -5$ (break-even)** |
+| **ADD**  | 352 | 158 | **$\approx 194$** |
+| **MUL**  | 351 | 86  | **$\approx 265$** |
+| **ReLU** | 351 | −678 | **$\approx 1,029$** |
+
+- **GEMV Break-Even:** In GEMV, PIM-ACT recovers almost exactly the switch time ($356$ net cycles saved vs $351$ cycles removed $\approx -5$ cycles difference, effectively break-even). This confirms that outside of the mode switch, PIM-ACT execution speed matches baseline GEMV compute speed closely.
+- **Elementwise Overheads:** ADD, MUL, and ReLU leave $194\text{--}1,029$ cycles of net overhead, meaning that the PIM-ACT compute and memory access sequence itself runs slower than baseline, offsetting a substantial fraction (or all, in the case of ReLU) of the mode-switch savings.
+
+### 7.6 System Scale and Baseline Runtime Discrepancy
+
+The paper (§3, Fig. 2) reports that a $4096 \times 4096$ GEMV on four HBM-PIM modules takes approximately $13\,\mu\text{s}$. In our simulation harness, the baseline GEMV takes $57.9\,\mu\text{s}$ ($57,923$ cycles at 1 GHz).
+
+A single $\sim 350\text{ ns}$ mode switch over $13\,\mu\text{s}$ represents $350 / 13000 \approx 2.7\%$, which closely aligns with the paper's claimed $+2.54\%$ speedup for GEMV ($AAO=0$). This indicates that the paper's reported gain is consistent with a single round trip over a much shorter execution time.
+
+Applying this same relation to the other kernels ($350\text{ ns}$ divided by the paper's claimed speedup) yields implied baseline execution times of:
+- ADD: $350\text{ ns} / 0.0968 \approx 3.6\,\mu\text{s}$ (vs simulated $9.6\,\mu\text{s}$)
+- MUL: $350\text{ ns} / 0.1138 \approx 3.1\,\mu\text{s}$ (vs simulated $19.3\,\mu\text{s}$)
+- ReLU: $350\text{ ns} / 0.0451 \approx 7.8\,\mu\text{s}$ (vs simulated $25.1\,\mu\text{s}$)
+
+The ratios between our simulated baseline execution times and these implied runtimes are $3\text{--}6\times$, but they are not uniform across kernels.
+
+**Configuration Check:**
+- Memory Configuration (`system_hbm_64ch.ini`): `NUM_CHANS=64` independent memory controllers.
+- DRAM Organization (`ini/HBM2_samsung_2M_16B_x64.ini`): `NUM_BANKS=16`, `NUM_BANK_GROUPS=4`.
+- Test Harness Initialization (`KernelTestCases.h`): `numPIMChan = 64`, `numPIMRank = 1`.
+
+Because one switch accounts for only 0.6%–3.8% of this simulation harness's runtime (versus an implied 2.7% for the paper's GEMV), the primary architectural divergence appears to stem from modeled system scale and concurrency rather than switch frequency.
 
 ---
 
@@ -208,7 +237,7 @@ Even after accounting for the complete 351–352 ns mode switch round trip (incl
 1. **Issue B1 (tRAS/tRC +1 over-penalization):** Fixed. Removed spurious `+1` from `MemoryController.cpp` and `Rank.cpp`.
 2. **Issue B2 (AAO tRP never triggered):** Fixed. Precharge uses `activeOptype` from `pimRank->getActiveOptype()`.
 3. **Issue B3 (tRCDWR write delay):** Fixed. Writes use `tRCDWR` via `PimActTiming.h`.
-4. **Issue B4 (Same-Row Optype Mismatch):** Diagnostic instrumented. Counter confirmed operational via positive control (injected mismatch fired `total=1`). When tested against both the passing headline build and the failing loop build, `[B4-HIST]` printed `total=0`. No same-row optype collisions occur in paper kernels.
+4. **Issue B4 (Same-Row Optype Mismatch):** Diagnostic instrumented. Counter confirmed operational via positive control (injected mismatch fired `total=1`). When tested against both the passing headline build and the failing loop build, `[B4-HIST]` printed `total=0`. Measured 0 events at issue time for these four kernels under this scheduler.
 5. **Issue B5 & B6 (Optype-0 Sentinel & AAO Scope):** Fixed. `NO_OPTYPE = 0xFF` sentinel implemented across `BusPacket` and `Transaction`.
 6. **Issue B8 (AAO Parameterization):** Fixed. Parameterized via `PimActTiming.h` with env var overrides.
 7. **Issue B9 (All-Bank PRECHARGE isIssuable Check):** **Attempted and reverted.**
@@ -221,7 +250,7 @@ Even after accounting for the complete 351–352 ns mode switch round trip (incl
 ---
 
 ## 9. Remaining Architectural Gap: ReLU Slowdown & Parity-Scoped PIM-ACT
-- ReLU remains **2.63% slower** under PIM-ACT (25,809 cycles vs. 25,131 baseline cycles).
+- ReLU remains **2.63% slower** under PIM-ACT (25,809 cycles vs. 25,131 baseline cycles), leaving $\approx 1,029$ cycles of implied overhead.
 - **Hypothesis:** In HBM-PIM, elementwise operations alternate between even and odd bank pairs. The simulator's rank-wide `PIM_ACT` precharges and opens all 16 banks together, whereas the baseline protocol can interleave activations across even/odd bank pairs. Investigating parity-scoped (even/odd) `PIM_ACT` is marked as future work.
 
 ---
@@ -229,8 +258,8 @@ Even after accounting for the complete 351–352 ns mode switch round trip (incl
 ## 10. Reproducibility Guide
 
 ### Repository State
-- **Git Commit:** `b10b767` (and follow-up documentation tag `partA-final-r2`)
-- **Git Tag:** `partA-final-r2`
+- **Git Commit:** `b10b767` (`partA-final`), `09ad4c8` (`partA-final-r2`), and follow-up `partA-final-r3`
+- **Git Tag:** `partA-final-r3`
 
 ### Build Command
 From `PIMSimulator/`:
@@ -253,3 +282,9 @@ python3 data/generate_all_data.py
    ```bash
    PIMACT_PREA_AWARE=0 ./run_step3_matrix.sh 2>&1 | tee results/step3_matrix/final_legacy_prea.txt
    ```
+
+### Running Mode-Switch Traces
+```bash
+PIM_TRACE_MODE_SWITCH=1 ./sim --gtest_filter="PIMKernelFixture.gemv_paper_4kx4k:PIMKernelFixture.add:PIMKernelFixture.mul_paper_2m:PIMKernelFixture.relu_paper_4m:PIMKernelFixture.gemv_pim_act:PIMKernelFixture.add_pim_act:PIMKernelFixture.mul_pim_act:PIMKernelFixture.relu_pim_act" > results/mode_switch/raw_mode_switch.txt 2>&1
+python3 scripts/analyze_mode_switch.py results/mode_switch/raw_mode_switch.txt
+```
