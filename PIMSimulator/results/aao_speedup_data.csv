@@ -1,5 +1,5 @@
-Kernel,Original_Protocol (ms),PIM_ACT_w_AAO (ms),Speedup_w_o_AAO (%),Speedup_with_AAO (%)
-GEMV,6943,26936,1.82,2.54
-ADD,3238,3738,6.45,9.68
-MUL,3242,7614,4.85,7.2
-ReLU,2342,11934,5.5,8.4
+Kernel,Baseline_Region_Cycles,Baseline_Total_Cycles,PIM_ACT_no_AAO_Region,PIM_ACT_no_AAO_Total,PIM_ACT_with_AAO_Region,PIM_ACT_with_AAO_Total,Region_Speedup_no_AAO (%),Region_Speedup_with_AAO (%),WholeRun_Speedup_no_AAO (%),WholeRun_Speedup_with_AAO (%),Paper_Target_no_AAO (%),Paper_Target_with_AAO (%)
+GEMV,13483,57923,13059,57567,12681,57189,3.25,6.32,0.62,1.28,2.54,9.65
+ADD,3308,9626,3087,9468,3087,9468,7.16,7.16,1.67,1.67,9.68,10.0
+MUL,6286,19280,6141,19194,6141,19194,2.36,2.36,0.45,0.45,11.38,11.53
+ReLU,7660,25131,7877,25809,7877,25809,-2.75,-2.75,-2.63,-2.63,4.51,4.65
