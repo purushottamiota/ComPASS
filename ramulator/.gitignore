@@ -5,3 +5,6 @@ obj/
 
 # Compiled target executable files
 ramulator
+
+ramulator.exe
+*.exe

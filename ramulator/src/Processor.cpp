@@ -393,9 +393,9 @@ bool Trace::get_unfiltered_request(long& bubble_cnt, long& req_addr, Request::Ty
       //return false;
     }
     size_t pos, end;
-    bubble_cnt = std::stoul(line, &pos, 10);
+    bubble_cnt = std::stoull(line, &pos, 10);
     pos = line.find_first_not_of(' ', pos+1);
-    req_addr = std::stoul(line.substr(pos), &end, 0);
+    req_addr = std::stoull(line.substr(pos), &end, 0);
 
     pos = line.find_first_not_of(' ', pos+end);
 
@@ -440,16 +440,16 @@ bool Trace::get_filtered_request(long& bubble_cnt, long& req_addr, Request::Type
     }
 
     size_t pos, end;
-    bubble_cnt = std::stoul(line, &pos, 10);
+    bubble_cnt = std::stoull(line, &pos, 10);
 
     pos = line.find_first_not_of(" \t", pos+1);
-    req_addr = stoul(line.substr(pos), &end, 0);
+    req_addr = std::stoull(line.substr(pos), &end, 0);
     req_type = Request::Type::READ;
 
     pos = line.find_first_not_of(" \t\r\n", pos+end);
     if (pos != string::npos){
         has_write = true;
-        write_addr = stoul(line.substr(pos), NULL, 0);
+        write_addr = std::stoull(line.substr(pos), NULL, 0);
     }
     return true;
 }
@@ -462,7 +462,7 @@ bool Trace::get_dramtrace_request(long& req_addr, Request::Type& req_type)
         return false;
     }
     size_t pos;
-    req_addr = std::stoul(line, &pos, 16);
+    req_addr = std::stoull(line, &pos, 16);
 
     pos = line.find_first_not_of(' ', pos+1);
 

@@ -15,11 +15,11 @@ Throughput Balancer (ST-BLC),stblc,0,65536,538872,74866,0.791,98.29
 Throughput Balancer (ST-BLC),stblc,1,65536,0,356,0.791,98.44
 Throughput Balancer (ST-BLC),stblc,2,65536,541678,77087,0.791,98.25
 Throughput Balancer (ST-BLC),stblc,3,65536,0,356,0.791,98.44
-Throughput Balancer (AT-BLC),atblc,0,65536,541666,75036,0.781,98.26
-Throughput Balancer (AT-BLC),atblc,1,65536,0,356,0.781,98.44
-Throughput Balancer (AT-BLC),atblc,2,65536,544456,75204,0.781,98.25
-Throughput Balancer (AT-BLC),atblc,3,65536,0,356,0.781,98.44
-"Elastic Balancer (E-BLC, Novel)",eblc,0,65536,538941,75168,0.785,98.27
-"Elastic Balancer (E-BLC, Novel)",eblc,1,65536,0,356,0.785,98.44
-"Elastic Balancer (E-BLC, Novel)",eblc,2,65536,541668,76071,0.785,98.26
-"Elastic Balancer (E-BLC, Novel)",eblc,3,65536,0,356,0.785,98.44
+Throughput Balancer (AT-BLC),atblc,0,65536,540245,77003,0.787,98.22
+Throughput Balancer (AT-BLC),atblc,1,65536,0,356,0.787,98.44
+Throughput Balancer (AT-BLC),atblc,2,65536,543040,76958,0.787,98.25
+Throughput Balancer (AT-BLC),atblc,3,65536,0,356,0.787,98.44
+"Elastic Balancer (E-BLC, Novel)",eblc,0,65536,543865,76809,0.780,98.27
+"Elastic Balancer (E-BLC, Novel)",eblc,1,65536,0,356,0.780,98.44
+"Elastic Balancer (E-BLC, Novel)",eblc,2,65536,546844,75938,0.780,98.24
+"Elastic Balancer (E-BLC, Novel)",eblc,3,65536,0,356,0.780,98.44

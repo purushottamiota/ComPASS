@@ -2,6 +2,7 @@
 #define __CONTROLLER_H
 
 #include <cassert>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <deque>
@@ -258,6 +259,7 @@ public:
     long total_pim_work = 65536;
     long last_ref_epoch = 0;
     long ref_interval = 12480; // tREFI
+    long pim_start_clk = -1;
 
 
 
@@ -669,22 +671,39 @@ public:
         /*** 2. Refresh scheduler & AT-BLC epoch ***/
         refresh->tick_ref();
 
-        if ((policy_type == PolicyType::AT_BLC || policy_type == PolicyType::E_BLC) && clk - last_ref_epoch >= ref_interval) {
-            last_ref_epoch = clk;
-            if (clk > 0 && effective_target_T > 0 && total_pim_work > 0) {
-                double expected_rate = (double)total_pim_work / (double)effective_target_T;
-                double current_rate = (double)pim_gen.pim_work_completed / (double)clk;
-                double delta = (current_rate - expected_rate) / expected_rate;
+        if (warmup_complete && (policy_type == PolicyType::AT_BLC || policy_type == PolicyType::E_BLC)) {
+            if (pim_start_clk < 0) {
+                pim_start_clk = clk;
+                last_ref_epoch = clk;
+            }
+            if (clk - last_ref_epoch >= ref_interval) {
+                last_ref_epoch = clk;
+                long active_pim_cycles = clk - pim_start_clk;
+                if (active_pim_cycles > 0 && effective_target_T > 0 && total_pim_work > 0) {
+                    double expected_rate = (double)total_pim_work / (double)effective_target_T;
+                    double current_rate = (double)pim_gen.pim_work_completed / (double)active_pim_cycles;
+                    double delta = (current_rate - expected_rate) / expected_rate;
 
-                double host_util = (double)epoch_host_served / (double)max(1L, (long)N_limit);
-                epoch_host_served = 0;
+                    double host_util = (double)epoch_host_served / (double)max(1L, (long)N_limit);
+                    epoch_host_served = 0;
 
-                if (delta > blc_lambda && host_util > 0.50) {
-                    N_limit = min(N_max, N_limit + blc_step);
-                } else if (delta < -blc_lambda) {
-                    N_limit = max(N_min, N_limit - blc_step);
-                }
-                N_timeline.push_back(make_pair(clk, N_limit));
+                    // Proportional step: scale with magnitude of delta, clamped to [4, 32]
+                    int dynamic_step = max(4, min(32, (int)(fabs(delta) * 100)));
+
+                    if (delta > blc_lambda && host_util > 0.50) {
+                        N_limit = min(N_max, N_limit + dynamic_step);
+                        // Adaptive Target Margin: when PIM progress is comfortably ahead,
+                        // relax effective target from 0.90*T towards 0.95*T to yield more turns to the host
+                        if (delta > 0.05 && effective_target_T < (long)(0.95 * target_time_T)) {
+                            effective_target_T = (long)(0.95 * target_time_T);
+                        }
+                    } else if (delta < -blc_lambda) {
+                        N_limit = max(N_min, N_limit - dynamic_step);
+                        // Tighten back to conservative 90% margin if PIM falls behind schedule
+                        effective_target_T = (long)(0.90 * target_time_T);
+                    }
+                    N_timeline.push_back(make_pair(clk, N_limit));
+                    }
             }
         }
 
