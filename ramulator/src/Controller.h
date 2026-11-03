@@ -848,10 +848,10 @@ public:
                     }
                 } else if (have_pim) {
                     queue = &pim_q; req = pim_req; cmd = pim_cmd; is_valid_req = true;
-                    consecutive_pim++;
+                    if (tb_pim_turn) consecutive_pim++;
                 } else if (have_host) {
                     queue = hostq; req = host_req; cmd = host_cmd; is_valid_req = true;
-                    consecutive_host++;
+                    if (!tb_pim_turn) consecutive_host++;
                 }
 
                 if (pim_gen.pim_work_completed >= total_pim_work) {
@@ -901,16 +901,16 @@ public:
                         queue = &pim_q; req = pim_req; cmd = pim_cmd; is_valid_req = true;
                         consecutive_pim++;
                     } else if (have_host) {
+                        // Opportunistic host scheduling: PIM is waiting on timing, do not deduct from host turn quota
                         queue = hostq; req = host_req; cmd = host_cmd; is_valid_req = true;
-                        consecutive_host++;
                     }
                 } else {
                     if (have_host) {
                         queue = hostq; req = host_req; cmd = host_cmd; is_valid_req = true;
                         consecutive_host++;
                     } else if (have_pim) {
+                        // Opportunistic PIM scheduling: Host is waiting on timing, do not deduct from PIM turn quota
                         queue = &pim_q; req = pim_req; cmd = pim_cmd; is_valid_req = true;
-                        consecutive_pim++;
                     }
                 }
             }
