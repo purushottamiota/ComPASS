@@ -41,6 +41,7 @@ struct PhaseCnt {
     uint64_t pre = 0;
     uint64_t rd = 0;
     uint64_t wr = 0;
+    uint64_t pmpre = 0;
 };
 
 static std::map<std::pair<int, int>, uint64_t> g_b4Hist;
@@ -96,27 +97,32 @@ void printGlobalCommandCounts(const std::string& label)
         g_atLastPhaseCnt.pimact - g_atFirstPhaseCnt.pimact,
         g_atLastPhaseCnt.pre - g_atFirstPhaseCnt.pre,
         g_atLastPhaseCnt.rd - g_atFirstPhaseCnt.rd,
-        g_atLastPhaseCnt.wr - g_atFirstPhaseCnt.wr
+        g_atLastPhaseCnt.wr - g_atFirstPhaseCnt.wr,
+        g_atLastPhaseCnt.pmpre - g_atFirstPhaseCnt.pmpre
     };
     PhaseCnt readback = {
         g_curPhaseCnt.act - g_atLastPhaseCnt.act,
         g_curPhaseCnt.pimact - g_atLastPhaseCnt.pimact,
         g_curPhaseCnt.pre - g_atLastPhaseCnt.pre,
         g_curPhaseCnt.rd - g_atLastPhaseCnt.rd,
-        g_curPhaseCnt.wr - g_atLastPhaseCnt.wr
+        g_curPhaseCnt.wr - g_atLastPhaseCnt.wr,
+        g_curPhaseCnt.pmpre - g_atLastPhaseCnt.pmpre
     };
 
     std::cout << "[PHASE-CMDS] " << label << " phase=preload"
               << " #ACT=" << preload.act << " #PIM_ACT=" << preload.pimact
-              << " #PRE=" << preload.pre << " #RD=" << preload.rd << " #WR=" << preload.wr
+              << " #PRE=" << preload.pre << " #PMPRE=" << preload.pmpre
+              << " #RD=" << preload.rd << " #WR=" << preload.wr
               << std::endl;
     std::cout << "[PHASE-CMDS] " << label << " phase=region"
               << " #ACT=" << region.act << " #PIM_ACT=" << region.pimact
-              << " #PRE=" << region.pre << " #RD=" << region.rd << " #WR=" << region.wr
+              << " #PRE=" << region.pre << " #PMPRE=" << region.pmpre
+              << " #RD=" << region.rd << " #WR=" << region.wr
               << std::endl;
     std::cout << "[PHASE-CMDS] " << label << " phase=readback"
               << " #ACT=" << readback.act << " #PIM_ACT=" << readback.pimact
-              << " #PRE=" << readback.pre << " #RD=" << readback.rd << " #WR=" << readback.wr
+              << " #PRE=" << readback.pre << " #PMPRE=" << readback.pmpre
+              << " #RD=" << readback.rd << " #WR=" << readback.wr
               << std::endl;
 
     uint64_t b4_total = 0;
@@ -466,6 +472,7 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
             g_curPhaseCnt.pre++;
             if ((*ranks)[rank]->pimRank->isPIMACTMode())
             {
+                g_curPhaseCnt.pmpre++;
                 uint8_t activeOpt = (*ranks)[rank]->pimRank->getActiveOptype();
                 uint64_t tRP_val = pimPrechargeTiming(config, activeOpt, AAO_ENABLED);
                 for (size_t b = 0; b < config.NUM_BANKS; b++)

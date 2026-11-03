@@ -86,7 +86,7 @@ Data extracted directly from `results/step3_matrix/final.txt` (Headline: PREA-Aw
 
 **Key Findings:**
 - When measured across the entire simulation run (including host data preload and result readback), whole-run speedups fall short of the paper's headline numbers.
-- **GEMV (AAO=0) is reproduced within about 0.7 percentage points (+3.25% vs +2.54%) when measured strictly over the PIM compute region** (see Section 7.6).
+- **GEMV (AAO=0) is reproduced within about 0.4–0.7 percentage points (+2.92% to +3.25% vs +2.54%) when measured strictly over the PIM compute region** (see Section 7.5 and 7.6).
 - **AAO Measurement:** Runtime instrumentation (`[AAO-HIST]`) reveals that:
   - In GEMV, `OP_MOV_HOST_TO_RF` (optype 32) fires 2,048 times out of 6,464 `PIM_ACT` commands, which is consistent with the 378-cycle gain (+0.66 percentage points).
   - In ADD, MUL, and ReLU, `[AAO-HIST]` confirmed exactly 0 activations trigger the AAO branch. In these kernels, all operations access DRAM banks (`OP_ADD_GRF_A_BANK`, `OP_MUL_GRF_A_BANK`, `OP_RELU_GRF_A`), which require standard bitline activation and restoration rather than shortened register-only timing.
@@ -282,15 +282,29 @@ $$\text{Net Difference} = (\text{Switch Removed} - \text{Region Saved}) + \text{
 1. **Constant Boundary Shifts:** Every kernel pays a small, nearly constant boundary penalty under PIM-ACT:
    - **Preload Shift ($\approx 33\text{--}43$ cycles):** Bank turnaround latency following the final preload write before the memory controller can safely issue the first rank-wide `PIM_ACT` (44,283 vs 44,326 in GEMV; 4,242 vs 4,279 in ADD; 8,482 vs 8,515 in MUL and ReLU).
    - **Readback Shift ($\approx 25\text{--}26$ cycles for GEMV, ADD, MUL):** Minor queue drain and bus turnaround before host readback streams initiate.
-2. **GEMV Outperformance in Compute Region:** In GEMV, the PIM compute region saves $424$ cycles—**$73$ cycles more than the 351-cycle mode switch alone**—due to improved memory command pipelining during matrix-vector evaluation. This offset completely absorbs the $+43$ preload shift and $+25$ readback shift, resulting in a net $-5$ cycle difference (a net whole-run gain of $356$ cycles over baseline).
-3. **Elementwise Gaps:** ADD and MUL suffer $131$ and $206$ cycles of region overhead respectively, leaving $194$ and $265$ cycles of total net difference.
+2. **GEMV Region Savings ($424$ cycles saved, $73$ above switch alone):** In GEMV, the PIM compute region saves $424$ cycles ($13,483 \rightarrow 13,059$), which is $73$ cycles more than the 351-cycle mode switch alone. This is supported by row activation counts in the compute region: baseline GEMV issues $9,152$ per-bank row activations, whereas PREA-aware PIM-ACT issues $6,464$ rank-wide activations ($2,688$ fewer row activations, a $29.4\%$ reduction). This region saving absorbs the $+43$ preload shift and $+25$ readback shift, netting $-5$ cycles difference ($+356$ whole-run cycles saved over baseline).
+3. **Elementwise Compute Overhead is Not Driven by Row Count:** In ReLU, the PIM region opens **fewer rows** than baseline ($8,256$ PIM_ACT vs $11,136$ baseline ACT, a $25.9\%$ reduction), yet the PIM region is **$217$ cycles slower** ($7,877$ vs $7,660$), which is $568$ cycles above the 351-cycle switch saving ($351 - (-217) = 568$). Because activation counts are lower, the region overhead cannot be explained by row opens. This directly supports the hypothesis in §9 that rank-wide all-bank synchronization in `PIM_ACT` serializes memory transactions that HBM-PIM hardware pipelines across even/odd bank pairs.
 4. **ReLU Readback Outlier:** ReLU's $+428$-cycle readback shift is the single massive outlier across the entire benchmark suite.
 
 ---
 
-### 7.8 Empirical Command Analysis: Proof of the ReLU Readback Mechanism
+### 7.8 Empirical Command Analysis: GEMV and ReLU Phase Breakdowns
 
-To definitively determine whether ReLU's readback slowdown originates from bank row conflicts, we instrumented phase-split command tracking (`[PHASE-CMDS]`) capturing `#ACT`, `#PIM_ACT`, `#PRE`, `#RD`, and `#WR` across Preload, Region, and Readback:
+To examine the micro-architectural command distribution across execution phases, we instrumented phase-split command tracking (`[PHASE-CMDS]`) capturing `#ACT`, `#PIM_ACT`, `#PRE`, `#PMPRE` (PIM-mode rank-wide precharges), `#RD`, and `#WR`:
+
+#### Phase-Split DRAM Command Counts (GEMV 4K×4K)
+
+| Phase | Metric | Baseline (`gemv_paper_4kx4k`) | PREA-Aware PIM-ACT (`gemv_pim_act`) | Delta (PIM-ACT vs Baseline) |
+| :--- | :--- | :---: | :---: | :---: |
+| **Preload** | `#ACT` / `#PRE` / `#WR` | 33,472 / 33,408 / 1,048,512 | 33,472 / 33,472 / 1,048,576 | 0 / +64 / +64 |
+| **Region**  | `#ACT` / `#PIM_ACT` | 9,152 / 0 | **0 / 6,464** | **−2,688 net activations (−29.4%)** |
+| | `#PRE` / `#PMPRE` | 8,832 / 0 | 6,400 / 6,400 | −2,432 / +6,400 |
+| | `#RD` / `#WR` | 133,120 / 17,536 | 131,072 / 16,896 | −2,048 / −640 |
+| **Readback**| `#ACT` / `#PRE` / `#PMPRE` | 320 / 704 / 0 | 512 / 576 / 64 | +192 / −128 / +64 |
+| | `#RD` | 4,096 | 4,096 | 0 |
+| **Whole-Run**| Total Row Activations | **42,944** | **40,448** (33,984 ACT + 6,464 PIM_ACT) | **−2,496 (−5.8%)** |
+
+*GEMV Observation:* In the compute region, PREA-aware PIM-ACT eliminates $2,688$ row activations compared to baseline, supporting the extra $73$ cycles saved beyond the 351-cycle switch ($424$ region cycles saved vs $351$ switch removed).
 
 #### Phase-Split DRAM Command Counts (ReLU 4M)
 
@@ -302,14 +316,18 @@ To definitively determine whether ReLU's readback slowdown originates from bank 
 | **Region #ACT**  | 11,136 | **0** | **0** | −11,136 | 0 |
 | **Region #PIM_ACT** | 0 | 16,384 | **8,256** | +8,256 | **−8,128 (−49.6%)** |
 | **Region #PRE**  | 11,328 | 16,320 | 8,192 | −3,136 | −8,128 |
+| **Region #PMPRE**| 0 | 16,320 | 8,192 | +8,192 | −8,128 |
 | **Readback #ACT** | **10,048** | **10,240** | **11,136** | **+1,088 (+10.8%)** | **+896 (+8.75%)** |
 | **Readback #PRE** | **10,432** | **10,304** | **11,200** | **+768 (+7.36%)** | **+896 (+8.70%)** |
+| **Readback #PMPRE**| 0 | 64 | 64 | +64 | **0** |
 | **Readback #RD**  | 262,144 | 262,144 | 262,144 | 0 | 0 |
 
-#### Empirical Confirmation:
-1. **Exact Origin of the +896 Activations:** The $+896$ whole-run `#ACT` increase in PREA-aware vs Naive PIM-ACT ($64,384 - 63,488 = 896$) occurs **100% inside the readback phase** ($11,136 - 10,240 = \mathbf{+896}$). Inside the PIM region, `#ACT` is exactly 0 for both policies.
-2. **Bank Row-Conflict Confirmation:** In Naive PIM-ACT, every bank is precharged after each operation, leaving banks idle when compute finishes. In PREA-aware PIM-ACT, rows are kept open across the rank to maximize row hits for pending PIM requests. When host readback begins, host reads access addresses on different rows across those banks, triggering **$+1,088$ extra `#ACT` and $+768$ extra `#PRE` compared to baseline**, and **$+896$ extra `#ACT` and $+896$ extra `#PRE` compared to naive precharge**.
-3. **Latency Impact:** These conflicts force full $t_{RP} + t_{RCD}$ row cycles rather than clean idle activations, directly causing the measured $+428$-cycle readback penalty ($9,417$ vs $8,989$ cycles).
+#### Analysis of the ReLU Readback Slowdown:
+1. **Location in Readback:** Command counts locate the entire $+896$ `#ACT` and $+896$ `#PRE` delta against naive 100% inside the readback phase ($11,136 - 10,240 = \mathbf{+896}$). Across 64 channels, this corresponds to **$14$ extra row cycles per channel** ($896 / 64 = 14$).
+2. **Cycle Cost Cross-Check:** Dividing the measured readback penalty by the per-channel extra row cycles gives:
+   $$\frac{428\text{ extra readback cycles}}{14\text{ extra row cycles per channel}} \approx 30.6\text{ cycles per extra row cycle}$$
+   This is consistent with the duration of one serialized $t_{RP} + t_{RCD}$ row-cycle delay (nominal $t_{RP}=14 + t_{RCDRD}=14 = 28$ cycles), assuming the extra row cycles serialize uniformly across the 64 channels.
+3. **PIM-Mode Rank-Wide Precharge Test (`#PMPRE`):** The `#PMPRE` counter in readback measures exactly **64** in both PREA-aware and naive runs ($\Delta = 0$). This confirms that exactly one rank-wide precharge is issued per channel ($64 / 64 = 1$) at the readback boundary to clear PIM mode (`pimRank->setPIMACTMode(false)` in `Rank.cpp`), after which all remaining readback precharges ($11,136$ in aware, $10,240$ in naive) are standard per-bank precharges. This rules out the hypothesis that rank-wide precharges were repeatedly closing other banks' just-opened rows during readback. Instead, leaving rows open across the rank under PREA-aware scheduling forces host readback streams to incur extra closed-page conflict cycles.
 
 ---
 
@@ -332,16 +350,16 @@ To definitively determine whether ReLU's readback slowdown originates from bank 
 
 ## 9. Remaining Architectural Gap: ReLU Slowdown & Parity-Scoped PIM-ACT
 - ReLU remains **2.63% slower** overall (and 2.75% slower in the PIM region).
-- **Decomposition:** $63\%$ of the whole-run slowdown ($428$ cycles) occurs during post-compute readback, which Section 7.8 empirically confirms is driven by $+1,088$ extra `#ACT` and $+768$ extra `#PRE` commands against baseline (+896 ACT / +896 PRE vs naive PIM-ACT) caused by host read streams conflicting with open bank rows.
-- **PIM Region Slowdown (217 cycles):** In HBM-PIM, elementwise operations alternate between even and odd bank pairs. The simulator's rank-wide `PIM_ACT` precharges and opens all 16 banks together, whereas the baseline protocol can interleave activations across even/odd bank pairs. Investigating parity-scoped (even/odd) `PIM_ACT` remains marked as future work.
+- **Readback Slowdown (428 cycles):** Command tracking locates the slowdown in the readback phase (+896 ACT / +896 PRE, about 14 per channel); consistent with extra row cycles of about $t_{RP} + t_{RCD}$ each ($428 / 14 \approx 30.6$ cycles), with the `#PMPRE` counter showing exactly 1 mode-clearing precharge per channel.
+- **PIM Region Slowdown (217 cycles):** In the region, PIM-ACT issues fewer row activations than baseline (8,256 vs 11,136, −25.9%) but is 217 cycles slower (568 cycles above the 351-cycle switch saving). The region overhead is not driven by row count, supporting the hypothesis that rank-wide all-bank synchronization in `PIM_ACT` serializes execution that HBM-PIM hardware pipelines across even/odd bank pairs. Investigating parity-scoped (even/odd) `PIM_ACT` remains marked as future work.
 
 ---
 
 ## 10. Reproducibility Guide
 
 ### Repository State
-- **Git Commit:** `b66bda7` (`partA-final-r4`), follow-up `partA-final-r5`
-- **Git Tag:** `partA-final-r5`
+- **Git Commit:** `64eb5f3` (`partA-final-r5`), follow-up `partA-final-r6`
+- **Git Tag:** `partA-final-r6`
 
 ### Build Command
 From `PIMSimulator/`:
@@ -375,4 +393,4 @@ python3 scripts/analyze_mode_switch.py results/mode_switch/raw_mode_switch.txt
 
 ## 11. Final Assessment & Part A Conclusion
 
-Whole-run, Fig. 7 is not reproduced. Measured over the PIM region, GEMV without AAO matches the paper within about 0.4–0.7 points, consistent with one ~350 ns switch over a ~13.5 µs kernel. GEMV with AAO (+6.3% vs +9.65%), ADD, MUL and ReLU are not reproduced. Their gaps are decomposed by phase above, and the empirical phase-split command tracking confirms that the ReLU readback slowdown stems from post-compute host read conflicts on un-precharged banks (+1,088 ACT / +768 PRE vs baseline; +896 ACT / +896 PRE vs naive). Remaining region gaps are quantified by the overhead decomposition.
+Whole-run, Fig. 7 is not reproduced. Measured over the PIM region, GEMV without AAO matches the paper within about 0.4–0.7 points, consistent with one ~350 ns switch over a ~13.5 µs kernel. GEMV with AAO (+6.3% vs +9.65%), ADD, MUL and ReLU are not reproduced. Their gaps are decomposed by phase above. Empirical phase-split command tracking locates the ReLU slowdown in the readback phase (+896 ACT / +896 PRE, about 14 per channel), consistent with extra row cycles of about tRP + tRCD each; the #PMPRE counter shows exactly 1 mode-clearing precharge per channel, ruling out repeated rank-wide precharges during readback. Remaining region gaps are quantified by the overhead decomposition.

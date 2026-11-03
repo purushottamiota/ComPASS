@@ -1,6 +1,6 @@
 =======================================================
  Step 3: 12-configuration ground-truth cycle matrix
- Tue Nov  3 03:05:00 UTC 2026
+ Tue Nov  3 04:03:03 UTC 2026
 =======================================================
 Building (incremental)...
 scons: Reading SConscript files ...
@@ -16,33 +16,33 @@ scons: done building targets.
 Running filter: PIMKernelFixture.gemv_paper_4kx4k:PIMKernelFixture.add:PIMKernelFixture.mul_paper_2m:PIMKernelFixture.relu_paper_4m
 [CYCLES] add [baseline]  total_cycles=9626
 [CMD-COUNTS] add [baseline] #ACT=34304 #PIM_ACT=0 #PRE=34304 #RD=83968 #WR=139840
-[PHASE-CMDS] add [baseline] phase=preload #ACT=26560 #PIM_ACT=0 #PRE=25920 #RD=0 #WR=131072
-[PHASE-CMDS] add [baseline] phase=region #ACT=5888 #PIM_ACT=0 #PRE=6144 #RD=18432 #WR=8768
-[PHASE-CMDS] add [baseline] phase=readback #ACT=1856 #PIM_ACT=0 #PRE=2240 #RD=65536 #WR=0
+[PHASE-CMDS] add [baseline] phase=preload #ACT=26560 #PIM_ACT=0 #PRE=25920 #PMPRE=0 #RD=0 #WR=131072
+[PHASE-CMDS] add [baseline] phase=region #ACT=5888 #PIM_ACT=0 #PRE=6144 #PMPRE=0 #RD=18432 #WR=8768
+[PHASE-CMDS] add [baseline] phase=readback #ACT=1856 #PIM_ACT=0 #PRE=2240 #PMPRE=0 #RD=65536 #WR=0
 [B4-HIST] add [baseline] total=0
 [AAO-HIST] add [baseline] total=0
 [PIM-REGION] add [baseline] first=4242 last=7549 total=3308 last_preload_wr=4239
 [CYCLES] gemv_paper_4kx4k [baseline]  total_cycles=57923
 [CMD-COUNTS] gemv_paper_4kx4k [baseline] #ACT=42944 #PIM_ACT=0 #PRE=42944 #RD=137216 #WR=1066048
-[PHASE-CMDS] gemv_paper_4kx4k [baseline] phase=preload #ACT=33472 #PIM_ACT=0 #PRE=33408 #RD=0 #WR=1048512
-[PHASE-CMDS] gemv_paper_4kx4k [baseline] phase=region #ACT=9152 #PIM_ACT=0 #PRE=8832 #RD=133120 #WR=17536
-[PHASE-CMDS] gemv_paper_4kx4k [baseline] phase=readback #ACT=320 #PIM_ACT=0 #PRE=704 #RD=4096 #WR=0
+[PHASE-CMDS] gemv_paper_4kx4k [baseline] phase=preload #ACT=33472 #PIM_ACT=0 #PRE=33408 #PMPRE=0 #RD=0 #WR=1048512
+[PHASE-CMDS] gemv_paper_4kx4k [baseline] phase=region #ACT=9152 #PIM_ACT=0 #PRE=8832 #PMPRE=0 #RD=133120 #WR=17536
+[PHASE-CMDS] gemv_paper_4kx4k [baseline] phase=readback #ACT=320 #PIM_ACT=0 #PRE=704 #PMPRE=0 #RD=4096 #WR=0
 [B4-HIST] gemv_paper_4kx4k [baseline] total=0
 [AAO-HIST] gemv_paper_4kx4k [baseline] total=0
 [PIM-REGION] gemv_paper_4kx4k [baseline] first=44283 last=57765 total=13483 last_preload_wr=44282
 [CYCLES] mul_paper_2m [baseline]  total_cycles=19280
 [CMD-COUNTS] mul_paper_2m [baseline] #ACT=67264 #PIM_ACT=0 #PRE=67264 #RD=165888 #WR=279104
-[PHASE-CMDS] mul_paper_2m [baseline] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=52672 #RD=0 #WR=262144
-[PHASE-CMDS] mul_paper_2m [baseline] phase=region #ACT=9088 #PIM_ACT=0 #PRE=9280 #RD=34816 #WR=16960
-[PHASE-CMDS] mul_paper_2m [baseline] phase=readback #ACT=4928 #PIM_ACT=0 #PRE=5312 #RD=131072 #WR=0
+[PHASE-CMDS] mul_paper_2m [baseline] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=52672 #PMPRE=0 #RD=0 #WR=262144
+[PHASE-CMDS] mul_paper_2m [baseline] phase=region #ACT=9088 #PIM_ACT=0 #PRE=9280 #PMPRE=0 #RD=34816 #WR=16960
+[PHASE-CMDS] mul_paper_2m [baseline] phase=readback #ACT=4928 #PIM_ACT=0 #PRE=5312 #PMPRE=0 #RD=131072 #WR=0
 [B4-HIST] mul_paper_2m [baseline] total=0
 [AAO-HIST] mul_paper_2m [baseline] total=0
 [PIM-REGION] mul_paper_2m [baseline] first=8482 last=14767 total=6286 last_preload_wr=8475
 [CYCLES] relu_paper_4m [baseline]  total_cycles=25131
 [CMD-COUNTS] relu_paper_4m [baseline] #ACT=74432 #PIM_ACT=0 #PRE=74432 #RD=296960 #WR=295488
-[PHASE-CMDS] relu_paper_4m [baseline] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=52672 #RD=0 #WR=262144
-[PHASE-CMDS] relu_paper_4m [baseline] phase=region #ACT=11136 #PIM_ACT=0 #PRE=11328 #RD=34816 #WR=33344
-[PHASE-CMDS] relu_paper_4m [baseline] phase=readback #ACT=10048 #PIM_ACT=0 #PRE=10432 #RD=262144 #WR=0
+[PHASE-CMDS] relu_paper_4m [baseline] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=52672 #PMPRE=0 #RD=0 #WR=262144
+[PHASE-CMDS] relu_paper_4m [baseline] phase=region #ACT=11136 #PIM_ACT=0 #PRE=11328 #PMPRE=0 #RD=34816 #WR=33344
+[PHASE-CMDS] relu_paper_4m [baseline] phase=readback #ACT=10048 #PIM_ACT=0 #PRE=10432 #PMPRE=0 #RD=262144 #WR=0
 [B4-HIST] relu_paper_4m [baseline] total=0
 [AAO-HIST] relu_paper_4m [baseline] total=0
 [PIM-REGION] relu_paper_4m [baseline] first=8482 last=16141 total=7660 last_preload_wr=8475
@@ -53,33 +53,33 @@ Running filter: PIMKernelFixture.gemv_paper_4kx4k:PIMKernelFixture.add:PIMKernel
 Running filter: PIMKernelFixture.gemv_paper_4kx4k:PIMKernelFixture.add:PIMKernelFixture.mul_paper_2m:PIMKernelFixture.relu_paper_4m
 [CYCLES] add [baseline]  total_cycles=9626
 [CMD-COUNTS] add [baseline] #ACT=34304 #PIM_ACT=0 #PRE=34304 #RD=83968 #WR=139840
-[PHASE-CMDS] add [baseline] phase=preload #ACT=26560 #PIM_ACT=0 #PRE=25920 #RD=0 #WR=131072
-[PHASE-CMDS] add [baseline] phase=region #ACT=5888 #PIM_ACT=0 #PRE=6144 #RD=18432 #WR=8768
-[PHASE-CMDS] add [baseline] phase=readback #ACT=1856 #PIM_ACT=0 #PRE=2240 #RD=65536 #WR=0
+[PHASE-CMDS] add [baseline] phase=preload #ACT=26560 #PIM_ACT=0 #PRE=25920 #PMPRE=0 #RD=0 #WR=131072
+[PHASE-CMDS] add [baseline] phase=region #ACT=5888 #PIM_ACT=0 #PRE=6144 #PMPRE=0 #RD=18432 #WR=8768
+[PHASE-CMDS] add [baseline] phase=readback #ACT=1856 #PIM_ACT=0 #PRE=2240 #PMPRE=0 #RD=65536 #WR=0
 [B4-HIST] add [baseline] total=0
 [AAO-HIST] add [baseline] total=0
 [PIM-REGION] add [baseline] first=4242 last=7549 total=3308 last_preload_wr=4239
 [CYCLES] gemv_paper_4kx4k [baseline]  total_cycles=57923
 [CMD-COUNTS] gemv_paper_4kx4k [baseline] #ACT=42944 #PIM_ACT=0 #PRE=42944 #RD=137216 #WR=1066048
-[PHASE-CMDS] gemv_paper_4kx4k [baseline] phase=preload #ACT=33472 #PIM_ACT=0 #PRE=33408 #RD=0 #WR=1048512
-[PHASE-CMDS] gemv_paper_4kx4k [baseline] phase=region #ACT=9152 #PIM_ACT=0 #PRE=8832 #RD=133120 #WR=17536
-[PHASE-CMDS] gemv_paper_4kx4k [baseline] phase=readback #ACT=320 #PIM_ACT=0 #PRE=704 #RD=4096 #WR=0
+[PHASE-CMDS] gemv_paper_4kx4k [baseline] phase=preload #ACT=33472 #PIM_ACT=0 #PRE=33408 #PMPRE=0 #RD=0 #WR=1048512
+[PHASE-CMDS] gemv_paper_4kx4k [baseline] phase=region #ACT=9152 #PIM_ACT=0 #PRE=8832 #PMPRE=0 #RD=133120 #WR=17536
+[PHASE-CMDS] gemv_paper_4kx4k [baseline] phase=readback #ACT=320 #PIM_ACT=0 #PRE=704 #PMPRE=0 #RD=4096 #WR=0
 [B4-HIST] gemv_paper_4kx4k [baseline] total=0
 [AAO-HIST] gemv_paper_4kx4k [baseline] total=0
 [PIM-REGION] gemv_paper_4kx4k [baseline] first=44283 last=57765 total=13483 last_preload_wr=44282
 [CYCLES] mul_paper_2m [baseline]  total_cycles=19280
 [CMD-COUNTS] mul_paper_2m [baseline] #ACT=67264 #PIM_ACT=0 #PRE=67264 #RD=165888 #WR=279104
-[PHASE-CMDS] mul_paper_2m [baseline] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=52672 #RD=0 #WR=262144
-[PHASE-CMDS] mul_paper_2m [baseline] phase=region #ACT=9088 #PIM_ACT=0 #PRE=9280 #RD=34816 #WR=16960
-[PHASE-CMDS] mul_paper_2m [baseline] phase=readback #ACT=4928 #PIM_ACT=0 #PRE=5312 #RD=131072 #WR=0
+[PHASE-CMDS] mul_paper_2m [baseline] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=52672 #PMPRE=0 #RD=0 #WR=262144
+[PHASE-CMDS] mul_paper_2m [baseline] phase=region #ACT=9088 #PIM_ACT=0 #PRE=9280 #PMPRE=0 #RD=34816 #WR=16960
+[PHASE-CMDS] mul_paper_2m [baseline] phase=readback #ACT=4928 #PIM_ACT=0 #PRE=5312 #PMPRE=0 #RD=131072 #WR=0
 [B4-HIST] mul_paper_2m [baseline] total=0
 [AAO-HIST] mul_paper_2m [baseline] total=0
 [PIM-REGION] mul_paper_2m [baseline] first=8482 last=14767 total=6286 last_preload_wr=8475
 [CYCLES] relu_paper_4m [baseline]  total_cycles=25131
 [CMD-COUNTS] relu_paper_4m [baseline] #ACT=74432 #PIM_ACT=0 #PRE=74432 #RD=296960 #WR=295488
-[PHASE-CMDS] relu_paper_4m [baseline] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=52672 #RD=0 #WR=262144
-[PHASE-CMDS] relu_paper_4m [baseline] phase=region #ACT=11136 #PIM_ACT=0 #PRE=11328 #RD=34816 #WR=33344
-[PHASE-CMDS] relu_paper_4m [baseline] phase=readback #ACT=10048 #PIM_ACT=0 #PRE=10432 #RD=262144 #WR=0
+[PHASE-CMDS] relu_paper_4m [baseline] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=52672 #PMPRE=0 #RD=0 #WR=262144
+[PHASE-CMDS] relu_paper_4m [baseline] phase=region #ACT=11136 #PIM_ACT=0 #PRE=11328 #PMPRE=0 #RD=34816 #WR=33344
+[PHASE-CMDS] relu_paper_4m [baseline] phase=readback #ACT=10048 #PIM_ACT=0 #PRE=10432 #PMPRE=0 #RD=262144 #WR=0
 [B4-HIST] relu_paper_4m [baseline] total=0
 [AAO-HIST] relu_paper_4m [baseline] total=0
 [PIM-REGION] relu_paper_4m [baseline] first=8482 last=16141 total=7660 last_preload_wr=8475
@@ -93,33 +93,33 @@ Running filter: PIMKernelFixture.gemv_paper_4kx4k:PIMKernelFixture.add:PIMKernel
 Running filter: PIMKernelFixture.gemv_pim_act:PIMKernelFixture.add_pim_act:PIMKernelFixture.mul_pim_act:PIMKernelFixture.relu_pim_act
 [CYCLES] gemv_pim_act [PIM-ACT]  total_cycles=57567
 [CMD-COUNTS] gemv_pim_act [PIM-ACT] #ACT=33984 #PIM_ACT=6400 #PRE=40384 #RD=135168 #WR=1065472
-[PHASE-CMDS] gemv_pim_act [PIM-ACT] phase=preload #ACT=33472 #PIM_ACT=0 #PRE=33472 #RD=0 #WR=1048576
-[PHASE-CMDS] gemv_pim_act [PIM-ACT] phase=region #ACT=0 #PIM_ACT=6400 #PRE=6336 #RD=131072 #WR=16896
-[PHASE-CMDS] gemv_pim_act [PIM-ACT] phase=readback #ACT=512 #PIM_ACT=0 #PRE=576 #RD=4096 #WR=0
+[PHASE-CMDS] gemv_pim_act [PIM-ACT] phase=preload #ACT=33472 #PIM_ACT=0 #PRE=33472 #PMPRE=0 #RD=0 #WR=1048576
+[PHASE-CMDS] gemv_pim_act [PIM-ACT] phase=region #ACT=0 #PIM_ACT=6400 #PRE=6336 #PMPRE=6336 #RD=131072 #WR=16896
+[PHASE-CMDS] gemv_pim_act [PIM-ACT] phase=readback #ACT=512 #PIM_ACT=0 #PRE=576 #PMPRE=64 #RD=4096 #WR=0
 [B4-HIST] gemv_pim_act [PIM-ACT] total=0
 [AAO-HIST] gemv_pim_act [PIM-ACT] total=0
 [PIM-REGION] gemv_pim_act [PIM-ACT] first=44326 last=57384 total=13059 last_preload_wr=44286
 [CYCLES] add_pim_act [PIM-ACT]  total_cycles=9468
 [CMD-COUNTS] add_pim_act [PIM-ACT] #ACT=28608 #PIM_ACT=3136 #PRE=31744 #RD=81920 #WR=139264
-[PHASE-CMDS] add_pim_act [PIM-ACT] phase=preload #ACT=26560 #PIM_ACT=0 #PRE=26560 #RD=0 #WR=131072
-[PHASE-CMDS] add_pim_act [PIM-ACT] phase=region #ACT=0 #PIM_ACT=3136 #PRE=3072 #RD=16384 #WR=8192
-[PHASE-CMDS] add_pim_act [PIM-ACT] phase=readback #ACT=2048 #PIM_ACT=0 #PRE=2112 #RD=65536 #WR=0
+[PHASE-CMDS] add_pim_act [PIM-ACT] phase=preload #ACT=26560 #PIM_ACT=0 #PRE=26560 #PMPRE=0 #RD=0 #WR=131072
+[PHASE-CMDS] add_pim_act [PIM-ACT] phase=region #ACT=0 #PIM_ACT=3136 #PRE=3072 #PMPRE=3072 #RD=16384 #WR=8192
+[PHASE-CMDS] add_pim_act [PIM-ACT] phase=readback #ACT=2048 #PIM_ACT=0 #PRE=2112 #PMPRE=64 #RD=65536 #WR=0
 [B4-HIST] add_pim_act [PIM-ACT] total=0
 [AAO-HIST] add_pim_act [PIM-ACT] total=0
 [PIM-REGION] add_pim_act [PIM-ACT] first=4279 last=7365 total=3087 last_preload_wr=4239
 [CYCLES] mul_pim_act [PIM-ACT]  total_cycles=19194
 [CMD-COUNTS] mul_pim_act [PIM-ACT] #ACT=58368 #PIM_ACT=6208 #PRE=64576 #RD=163840 #WR=278528
-[PHASE-CMDS] mul_pim_act [PIM-ACT] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=53248 #RD=0 #WR=262144
-[PHASE-CMDS] mul_pim_act [PIM-ACT] phase=region #ACT=0 #PIM_ACT=6208 #PRE=6144 #RD=32768 #WR=16384
-[PHASE-CMDS] mul_pim_act [PIM-ACT] phase=readback #ACT=5120 #PIM_ACT=0 #PRE=5184 #RD=131072 #WR=0
+[PHASE-CMDS] mul_pim_act [PIM-ACT] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=53248 #PMPRE=0 #RD=0 #WR=262144
+[PHASE-CMDS] mul_pim_act [PIM-ACT] phase=region #ACT=0 #PIM_ACT=6208 #PRE=6144 #PMPRE=6144 #RD=32768 #WR=16384
+[PHASE-CMDS] mul_pim_act [PIM-ACT] phase=readback #ACT=5120 #PIM_ACT=0 #PRE=5184 #PMPRE=64 #RD=131072 #WR=0
 [B4-HIST] mul_pim_act [PIM-ACT] total=0
 [AAO-HIST] mul_pim_act [PIM-ACT] total=0
 [PIM-REGION] mul_pim_act [PIM-ACT] first=8515 last=14655 total=6141 last_preload_wr=8475
 [CYCLES] relu_pim_act [PIM-ACT]  total_cycles=25809
 [CMD-COUNTS] relu_pim_act [PIM-ACT] #ACT=64384 #PIM_ACT=8256 #PRE=72640 #RD=294912 #WR=294912
-[PHASE-CMDS] relu_pim_act [PIM-ACT] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=53248 #RD=0 #WR=262144
-[PHASE-CMDS] relu_pim_act [PIM-ACT] phase=region #ACT=0 #PIM_ACT=8256 #PRE=8192 #RD=32768 #WR=32768
-[PHASE-CMDS] relu_pim_act [PIM-ACT] phase=readback #ACT=11136 #PIM_ACT=0 #PRE=11200 #RD=262144 #WR=0
+[PHASE-CMDS] relu_pim_act [PIM-ACT] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=53248 #PMPRE=0 #RD=0 #WR=262144
+[PHASE-CMDS] relu_pim_act [PIM-ACT] phase=region #ACT=0 #PIM_ACT=8256 #PRE=8192 #PMPRE=8192 #RD=32768 #WR=32768
+[PHASE-CMDS] relu_pim_act [PIM-ACT] phase=readback #ACT=11136 #PIM_ACT=0 #PRE=11200 #PMPRE=64 #RD=262144 #WR=0
 [B4-HIST] relu_pim_act [PIM-ACT] total=0
 [AAO-HIST] relu_pim_act [PIM-ACT] total=0
 [PIM-REGION] relu_pim_act [PIM-ACT] first=8515 last=16391 total=7877 last_preload_wr=8475
@@ -132,34 +132,34 @@ Running filter: PIMKernelFixture.gemv_pim_act:PIMKernelFixture.add_pim_act:PIMKe
 Running filter: PIMKernelFixture.gemv_pim_act:PIMKernelFixture.add_pim_act:PIMKernelFixture.mul_pim_act:PIMKernelFixture.relu_pim_act
 [CYCLES] gemv_pim_act [PIM-ACT]  total_cycles=57189
 [CMD-COUNTS] gemv_pim_act [PIM-ACT] #ACT=33984 #PIM_ACT=6464 #PRE=40448 #RD=135168 #WR=1065472
-[PHASE-CMDS] gemv_pim_act [PIM-ACT] phase=preload #ACT=33472 #PIM_ACT=0 #PRE=33472 #RD=0 #WR=1048576
-[PHASE-CMDS] gemv_pim_act [PIM-ACT] phase=region #ACT=0 #PIM_ACT=6464 #PRE=6400 #RD=131072 #WR=16896
-[PHASE-CMDS] gemv_pim_act [PIM-ACT] phase=readback #ACT=512 #PIM_ACT=0 #PRE=576 #RD=4096 #WR=0
+[PHASE-CMDS] gemv_pim_act [PIM-ACT] phase=preload #ACT=33472 #PIM_ACT=0 #PRE=33472 #PMPRE=0 #RD=0 #WR=1048576
+[PHASE-CMDS] gemv_pim_act [PIM-ACT] phase=region #ACT=0 #PIM_ACT=6464 #PRE=6400 #PMPRE=6400 #RD=131072 #WR=16896
+[PHASE-CMDS] gemv_pim_act [PIM-ACT] phase=readback #ACT=512 #PIM_ACT=0 #PRE=576 #PMPRE=64 #RD=4096 #WR=0
 [B4-HIST] gemv_pim_act [PIM-ACT] total=0
 [AAO-HIST] gemv_pim_act [PIM-ACT] optype=32 count=2048
 [AAO-HIST] gemv_pim_act [PIM-ACT] total=2048
 [PIM-REGION] gemv_pim_act [PIM-ACT] first=44326 last=57006 total=12681 last_preload_wr=44286
 [CYCLES] add_pim_act [PIM-ACT]  total_cycles=9468
 [CMD-COUNTS] add_pim_act [PIM-ACT] #ACT=28608 #PIM_ACT=3136 #PRE=31744 #RD=81920 #WR=139264
-[PHASE-CMDS] add_pim_act [PIM-ACT] phase=preload #ACT=26560 #PIM_ACT=0 #PRE=26560 #RD=0 #WR=131072
-[PHASE-CMDS] add_pim_act [PIM-ACT] phase=region #ACT=0 #PIM_ACT=3136 #PRE=3072 #RD=16384 #WR=8192
-[PHASE-CMDS] add_pim_act [PIM-ACT] phase=readback #ACT=2048 #PIM_ACT=0 #PRE=2112 #RD=65536 #WR=0
+[PHASE-CMDS] add_pim_act [PIM-ACT] phase=preload #ACT=26560 #PIM_ACT=0 #PRE=26560 #PMPRE=0 #RD=0 #WR=131072
+[PHASE-CMDS] add_pim_act [PIM-ACT] phase=region #ACT=0 #PIM_ACT=3136 #PRE=3072 #PMPRE=3072 #RD=16384 #WR=8192
+[PHASE-CMDS] add_pim_act [PIM-ACT] phase=readback #ACT=2048 #PIM_ACT=0 #PRE=2112 #PMPRE=64 #RD=65536 #WR=0
 [B4-HIST] add_pim_act [PIM-ACT] total=0
 [AAO-HIST] add_pim_act [PIM-ACT] total=0
 [PIM-REGION] add_pim_act [PIM-ACT] first=4279 last=7365 total=3087 last_preload_wr=4239
 [CYCLES] mul_pim_act [PIM-ACT]  total_cycles=19194
 [CMD-COUNTS] mul_pim_act [PIM-ACT] #ACT=58368 #PIM_ACT=6208 #PRE=64576 #RD=163840 #WR=278528
-[PHASE-CMDS] mul_pim_act [PIM-ACT] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=53248 #RD=0 #WR=262144
-[PHASE-CMDS] mul_pim_act [PIM-ACT] phase=region #ACT=0 #PIM_ACT=6208 #PRE=6144 #RD=32768 #WR=16384
-[PHASE-CMDS] mul_pim_act [PIM-ACT] phase=readback #ACT=5120 #PIM_ACT=0 #PRE=5184 #RD=131072 #WR=0
+[PHASE-CMDS] mul_pim_act [PIM-ACT] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=53248 #PMPRE=0 #RD=0 #WR=262144
+[PHASE-CMDS] mul_pim_act [PIM-ACT] phase=region #ACT=0 #PIM_ACT=6208 #PRE=6144 #PMPRE=6144 #RD=32768 #WR=16384
+[PHASE-CMDS] mul_pim_act [PIM-ACT] phase=readback #ACT=5120 #PIM_ACT=0 #PRE=5184 #PMPRE=64 #RD=131072 #WR=0
 [B4-HIST] mul_pim_act [PIM-ACT] total=0
 [AAO-HIST] mul_pim_act [PIM-ACT] total=0
 [PIM-REGION] mul_pim_act [PIM-ACT] first=8515 last=14655 total=6141 last_preload_wr=8475
 [CYCLES] relu_pim_act [PIM-ACT]  total_cycles=25809
 [CMD-COUNTS] relu_pim_act [PIM-ACT] #ACT=64384 #PIM_ACT=8256 #PRE=72640 #RD=294912 #WR=294912
-[PHASE-CMDS] relu_pim_act [PIM-ACT] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=53248 #RD=0 #WR=262144
-[PHASE-CMDS] relu_pim_act [PIM-ACT] phase=region #ACT=0 #PIM_ACT=8256 #PRE=8192 #RD=32768 #WR=32768
-[PHASE-CMDS] relu_pim_act [PIM-ACT] phase=readback #ACT=11136 #PIM_ACT=0 #PRE=11200 #RD=262144 #WR=0
+[PHASE-CMDS] relu_pim_act [PIM-ACT] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=53248 #PMPRE=0 #RD=0 #WR=262144
+[PHASE-CMDS] relu_pim_act [PIM-ACT] phase=region #ACT=0 #PIM_ACT=8256 #PRE=8192 #PMPRE=8192 #RD=32768 #WR=32768
+[PHASE-CMDS] relu_pim_act [PIM-ACT] phase=readback #ACT=11136 #PIM_ACT=0 #PRE=11200 #PMPRE=64 #RD=262144 #WR=0
 [B4-HIST] relu_pim_act [PIM-ACT] total=0
 [AAO-HIST] relu_pim_act [PIM-ACT] total=0
 [PIM-REGION] relu_pim_act [PIM-ACT] first=8515 last=16391 total=7877 last_preload_wr=8475
@@ -172,17 +172,17 @@ Running filter: PIMKernelFixture.gemv_pim_act:PIMKernelFixture.add_pim_act:PIMKe
 Running filter: PIMKernelFixture.a3_*
 [CYCLES] gemv_4kx4k [baseline]  total_cycles=57923
 [CMD-COUNTS] gemv_4kx4k [baseline] #ACT=42944 #PIM_ACT=0 #PRE=42944 #RD=137216 #WR=1066048
-[PHASE-CMDS] gemv_4kx4k [baseline] phase=preload #ACT=33472 #PIM_ACT=0 #PRE=33408 #RD=0 #WR=1048512
-[PHASE-CMDS] gemv_4kx4k [baseline] phase=region #ACT=9152 #PIM_ACT=0 #PRE=8832 #RD=133120 #WR=17536
-[PHASE-CMDS] gemv_4kx4k [baseline] phase=readback #ACT=320 #PIM_ACT=0 #PRE=704 #RD=4096 #WR=0
+[PHASE-CMDS] gemv_4kx4k [baseline] phase=preload #ACT=33472 #PIM_ACT=0 #PRE=33408 #PMPRE=0 #RD=0 #WR=1048512
+[PHASE-CMDS] gemv_4kx4k [baseline] phase=region #ACT=9152 #PIM_ACT=0 #PRE=8832 #PMPRE=0 #RD=133120 #WR=17536
+[PHASE-CMDS] gemv_4kx4k [baseline] phase=readback #ACT=320 #PIM_ACT=0 #PRE=704 #PMPRE=0 #RD=4096 #WR=0
 [B4-HIST] gemv_4kx4k [baseline] total=0
 [AAO-HIST] gemv_4kx4k [baseline] total=0
 [PIM-REGION] gemv_4kx4k [baseline] first=44283 last=57765 total=13483 last_preload_wr=44282
 [CYCLES] gemv_4kx4k [PIM-ACT]  total_cycles=57189
 [CMD-COUNTS] gemv_4kx4k [PIM-ACT] #ACT=33984 #PIM_ACT=6464 #PRE=40448 #RD=135168 #WR=1065472
-[PHASE-CMDS] gemv_4kx4k [PIM-ACT] phase=preload #ACT=33472 #PIM_ACT=0 #PRE=33472 #RD=0 #WR=1048576
-[PHASE-CMDS] gemv_4kx4k [PIM-ACT] phase=region #ACT=0 #PIM_ACT=6464 #PRE=6400 #RD=131072 #WR=16896
-[PHASE-CMDS] gemv_4kx4k [PIM-ACT] phase=readback #ACT=512 #PIM_ACT=0 #PRE=576 #RD=4096 #WR=0
+[PHASE-CMDS] gemv_4kx4k [PIM-ACT] phase=preload #ACT=33472 #PIM_ACT=0 #PRE=33472 #PMPRE=0 #RD=0 #WR=1048576
+[PHASE-CMDS] gemv_4kx4k [PIM-ACT] phase=region #ACT=0 #PIM_ACT=6464 #PRE=6400 #PMPRE=6400 #RD=131072 #WR=16896
+[PHASE-CMDS] gemv_4kx4k [PIM-ACT] phase=readback #ACT=512 #PIM_ACT=0 #PRE=576 #PMPRE=64 #RD=4096 #WR=0
 [B4-HIST] gemv_4kx4k [PIM-ACT] total=0
 [AAO-HIST] gemv_4kx4k [PIM-ACT] optype=32 count=2048
 [AAO-HIST] gemv_4kx4k [PIM-ACT] total=2048
@@ -190,51 +190,51 @@ Running filter: PIMKernelFixture.a3_*
 [A3-OK] gemv_4kx4k: baseline and PIM-ACT results are bitwise-identical (4096 bursts).
 [CYCLES] add_1m [baseline]  total_cycles=9626
 [CMD-COUNTS] add_1m [baseline] #ACT=34304 #PIM_ACT=0 #PRE=34304 #RD=83968 #WR=139840
-[PHASE-CMDS] add_1m [baseline] phase=preload #ACT=26560 #PIM_ACT=0 #PRE=25920 #RD=0 #WR=131072
-[PHASE-CMDS] add_1m [baseline] phase=region #ACT=5888 #PIM_ACT=0 #PRE=6144 #RD=18432 #WR=8768
-[PHASE-CMDS] add_1m [baseline] phase=readback #ACT=1856 #PIM_ACT=0 #PRE=2240 #RD=65536 #WR=0
+[PHASE-CMDS] add_1m [baseline] phase=preload #ACT=26560 #PIM_ACT=0 #PRE=25920 #PMPRE=0 #RD=0 #WR=131072
+[PHASE-CMDS] add_1m [baseline] phase=region #ACT=5888 #PIM_ACT=0 #PRE=6144 #PMPRE=0 #RD=18432 #WR=8768
+[PHASE-CMDS] add_1m [baseline] phase=readback #ACT=1856 #PIM_ACT=0 #PRE=2240 #PMPRE=0 #RD=65536 #WR=0
 [B4-HIST] add_1m [baseline] total=0
 [AAO-HIST] add_1m [baseline] total=0
 [PIM-REGION] add_1m [baseline] first=4242 last=7549 total=3308 last_preload_wr=4239
 [CYCLES] add_1m [PIM-ACT]  total_cycles=9468
 [CMD-COUNTS] add_1m [PIM-ACT] #ACT=28608 #PIM_ACT=3136 #PRE=31744 #RD=81920 #WR=139264
-[PHASE-CMDS] add_1m [PIM-ACT] phase=preload #ACT=26560 #PIM_ACT=0 #PRE=26560 #RD=0 #WR=131072
-[PHASE-CMDS] add_1m [PIM-ACT] phase=region #ACT=0 #PIM_ACT=3136 #PRE=3072 #RD=16384 #WR=8192
-[PHASE-CMDS] add_1m [PIM-ACT] phase=readback #ACT=2048 #PIM_ACT=0 #PRE=2112 #RD=65536 #WR=0
+[PHASE-CMDS] add_1m [PIM-ACT] phase=preload #ACT=26560 #PIM_ACT=0 #PRE=26560 #PMPRE=0 #RD=0 #WR=131072
+[PHASE-CMDS] add_1m [PIM-ACT] phase=region #ACT=0 #PIM_ACT=3136 #PRE=3072 #PMPRE=3072 #RD=16384 #WR=8192
+[PHASE-CMDS] add_1m [PIM-ACT] phase=readback #ACT=2048 #PIM_ACT=0 #PRE=2112 #PMPRE=64 #RD=65536 #WR=0
 [B4-HIST] add_1m [PIM-ACT] total=0
 [AAO-HIST] add_1m [PIM-ACT] total=0
 [PIM-REGION] add_1m [PIM-ACT] first=4279 last=7365 total=3087 last_preload_wr=4239
 [A3-OK] add_1m: baseline and PIM-ACT results are bitwise-identical (65536 bursts).
 [CYCLES] mul_2m [baseline]  total_cycles=19280
 [CMD-COUNTS] mul_2m [baseline] #ACT=67264 #PIM_ACT=0 #PRE=67264 #RD=165888 #WR=279104
-[PHASE-CMDS] mul_2m [baseline] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=52672 #RD=0 #WR=262144
-[PHASE-CMDS] mul_2m [baseline] phase=region #ACT=9088 #PIM_ACT=0 #PRE=9280 #RD=34816 #WR=16960
-[PHASE-CMDS] mul_2m [baseline] phase=readback #ACT=4928 #PIM_ACT=0 #PRE=5312 #RD=131072 #WR=0
+[PHASE-CMDS] mul_2m [baseline] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=52672 #PMPRE=0 #RD=0 #WR=262144
+[PHASE-CMDS] mul_2m [baseline] phase=region #ACT=9088 #PIM_ACT=0 #PRE=9280 #PMPRE=0 #RD=34816 #WR=16960
+[PHASE-CMDS] mul_2m [baseline] phase=readback #ACT=4928 #PIM_ACT=0 #PRE=5312 #PMPRE=0 #RD=131072 #WR=0
 [B4-HIST] mul_2m [baseline] total=0
 [AAO-HIST] mul_2m [baseline] total=0
 [PIM-REGION] mul_2m [baseline] first=8482 last=14767 total=6286 last_preload_wr=8475
 [CYCLES] mul_2m [PIM-ACT]  total_cycles=19194
 [CMD-COUNTS] mul_2m [PIM-ACT] #ACT=58368 #PIM_ACT=6208 #PRE=64576 #RD=163840 #WR=278528
-[PHASE-CMDS] mul_2m [PIM-ACT] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=53248 #RD=0 #WR=262144
-[PHASE-CMDS] mul_2m [PIM-ACT] phase=region #ACT=0 #PIM_ACT=6208 #PRE=6144 #RD=32768 #WR=16384
-[PHASE-CMDS] mul_2m [PIM-ACT] phase=readback #ACT=5120 #PIM_ACT=0 #PRE=5184 #RD=131072 #WR=0
+[PHASE-CMDS] mul_2m [PIM-ACT] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=53248 #PMPRE=0 #RD=0 #WR=262144
+[PHASE-CMDS] mul_2m [PIM-ACT] phase=region #ACT=0 #PIM_ACT=6208 #PRE=6144 #PMPRE=6144 #RD=32768 #WR=16384
+[PHASE-CMDS] mul_2m [PIM-ACT] phase=readback #ACT=5120 #PIM_ACT=0 #PRE=5184 #PMPRE=64 #RD=131072 #WR=0
 [B4-HIST] mul_2m [PIM-ACT] total=0
 [AAO-HIST] mul_2m [PIM-ACT] total=0
 [PIM-REGION] mul_2m [PIM-ACT] first=8515 last=14655 total=6141 last_preload_wr=8475
 [A3-OK] mul_2m: baseline and PIM-ACT results are bitwise-identical (131072 bursts).
 [CYCLES] relu_4m [baseline]  total_cycles=25131
 [CMD-COUNTS] relu_4m [baseline] #ACT=74432 #PIM_ACT=0 #PRE=74432 #RD=296960 #WR=295488
-[PHASE-CMDS] relu_4m [baseline] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=52672 #RD=0 #WR=262144
-[PHASE-CMDS] relu_4m [baseline] phase=region #ACT=11136 #PIM_ACT=0 #PRE=11328 #RD=34816 #WR=33344
-[PHASE-CMDS] relu_4m [baseline] phase=readback #ACT=10048 #PIM_ACT=0 #PRE=10432 #RD=262144 #WR=0
+[PHASE-CMDS] relu_4m [baseline] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=52672 #PMPRE=0 #RD=0 #WR=262144
+[PHASE-CMDS] relu_4m [baseline] phase=region #ACT=11136 #PIM_ACT=0 #PRE=11328 #PMPRE=0 #RD=34816 #WR=33344
+[PHASE-CMDS] relu_4m [baseline] phase=readback #ACT=10048 #PIM_ACT=0 #PRE=10432 #PMPRE=0 #RD=262144 #WR=0
 [B4-HIST] relu_4m [baseline] total=0
 [AAO-HIST] relu_4m [baseline] total=0
 [PIM-REGION] relu_4m [baseline] first=8482 last=16141 total=7660 last_preload_wr=8475
 [CYCLES] relu_4m [PIM-ACT]  total_cycles=25809
 [CMD-COUNTS] relu_4m [PIM-ACT] #ACT=64384 #PIM_ACT=8256 #PRE=72640 #RD=294912 #WR=294912
-[PHASE-CMDS] relu_4m [PIM-ACT] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=53248 #RD=0 #WR=262144
-[PHASE-CMDS] relu_4m [PIM-ACT] phase=region #ACT=0 #PIM_ACT=8256 #PRE=8192 #RD=32768 #WR=32768
-[PHASE-CMDS] relu_4m [PIM-ACT] phase=readback #ACT=11136 #PIM_ACT=0 #PRE=11200 #RD=262144 #WR=0
+[PHASE-CMDS] relu_4m [PIM-ACT] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=53248 #PMPRE=0 #RD=0 #WR=262144
+[PHASE-CMDS] relu_4m [PIM-ACT] phase=region #ACT=0 #PIM_ACT=8256 #PRE=8192 #PMPRE=8192 #RD=32768 #WR=32768
+[PHASE-CMDS] relu_4m [PIM-ACT] phase=readback #ACT=11136 #PIM_ACT=0 #PRE=11200 #PMPRE=64 #RD=262144 #WR=0
 [B4-HIST] relu_4m [PIM-ACT] total=0
 [AAO-HIST] relu_4m [PIM-ACT] total=0
 [PIM-REGION] relu_4m [PIM-ACT] first=8515 last=16391 total=7877 last_preload_wr=8475
@@ -246,68 +246,68 @@ Running filter: PIMKernelFixture.a3_*
 Running filter: PIMKernelFixture.a3_*
 [CYCLES] gemv_4kx4k [baseline]  total_cycles=57923
 [CMD-COUNTS] gemv_4kx4k [baseline] #ACT=42944 #PIM_ACT=0 #PRE=42944 #RD=137216 #WR=1066048
-[PHASE-CMDS] gemv_4kx4k [baseline] phase=preload #ACT=33472 #PIM_ACT=0 #PRE=33408 #RD=0 #WR=1048512
-[PHASE-CMDS] gemv_4kx4k [baseline] phase=region #ACT=9152 #PIM_ACT=0 #PRE=8832 #RD=133120 #WR=17536
-[PHASE-CMDS] gemv_4kx4k [baseline] phase=readback #ACT=320 #PIM_ACT=0 #PRE=704 #RD=4096 #WR=0
+[PHASE-CMDS] gemv_4kx4k [baseline] phase=preload #ACT=33472 #PIM_ACT=0 #PRE=33408 #PMPRE=0 #RD=0 #WR=1048512
+[PHASE-CMDS] gemv_4kx4k [baseline] phase=region #ACT=9152 #PIM_ACT=0 #PRE=8832 #PMPRE=0 #RD=133120 #WR=17536
+[PHASE-CMDS] gemv_4kx4k [baseline] phase=readback #ACT=320 #PIM_ACT=0 #PRE=704 #PMPRE=0 #RD=4096 #WR=0
 [B4-HIST] gemv_4kx4k [baseline] total=0
 [AAO-HIST] gemv_4kx4k [baseline] total=0
 [PIM-REGION] gemv_4kx4k [baseline] first=44283 last=57765 total=13483 last_preload_wr=44282
 [CYCLES] gemv_4kx4k [PIM-ACT]  total_cycles=57567
 [CMD-COUNTS] gemv_4kx4k [PIM-ACT] #ACT=33984 #PIM_ACT=6400 #PRE=40384 #RD=135168 #WR=1065472
-[PHASE-CMDS] gemv_4kx4k [PIM-ACT] phase=preload #ACT=33472 #PIM_ACT=0 #PRE=33472 #RD=0 #WR=1048576
-[PHASE-CMDS] gemv_4kx4k [PIM-ACT] phase=region #ACT=0 #PIM_ACT=6400 #PRE=6336 #RD=131072 #WR=16896
-[PHASE-CMDS] gemv_4kx4k [PIM-ACT] phase=readback #ACT=512 #PIM_ACT=0 #PRE=576 #RD=4096 #WR=0
+[PHASE-CMDS] gemv_4kx4k [PIM-ACT] phase=preload #ACT=33472 #PIM_ACT=0 #PRE=33472 #PMPRE=0 #RD=0 #WR=1048576
+[PHASE-CMDS] gemv_4kx4k [PIM-ACT] phase=region #ACT=0 #PIM_ACT=6400 #PRE=6336 #PMPRE=6336 #RD=131072 #WR=16896
+[PHASE-CMDS] gemv_4kx4k [PIM-ACT] phase=readback #ACT=512 #PIM_ACT=0 #PRE=576 #PMPRE=64 #RD=4096 #WR=0
 [B4-HIST] gemv_4kx4k [PIM-ACT] total=0
 [AAO-HIST] gemv_4kx4k [PIM-ACT] total=0
 [PIM-REGION] gemv_4kx4k [PIM-ACT] first=44326 last=57384 total=13059 last_preload_wr=44286
 [A3-OK] gemv_4kx4k: baseline and PIM-ACT results are bitwise-identical (4096 bursts).
 [CYCLES] add_1m [baseline]  total_cycles=9626
 [CMD-COUNTS] add_1m [baseline] #ACT=34304 #PIM_ACT=0 #PRE=34304 #RD=83968 #WR=139840
-[PHASE-CMDS] add_1m [baseline] phase=preload #ACT=26560 #PIM_ACT=0 #PRE=25920 #RD=0 #WR=131072
-[PHASE-CMDS] add_1m [baseline] phase=region #ACT=5888 #PIM_ACT=0 #PRE=6144 #RD=18432 #WR=8768
-[PHASE-CMDS] add_1m [baseline] phase=readback #ACT=1856 #PIM_ACT=0 #PRE=2240 #RD=65536 #WR=0
+[PHASE-CMDS] add_1m [baseline] phase=preload #ACT=26560 #PIM_ACT=0 #PRE=25920 #PMPRE=0 #RD=0 #WR=131072
+[PHASE-CMDS] add_1m [baseline] phase=region #ACT=5888 #PIM_ACT=0 #PRE=6144 #PMPRE=0 #RD=18432 #WR=8768
+[PHASE-CMDS] add_1m [baseline] phase=readback #ACT=1856 #PIM_ACT=0 #PRE=2240 #PMPRE=0 #RD=65536 #WR=0
 [B4-HIST] add_1m [baseline] total=0
 [AAO-HIST] add_1m [baseline] total=0
 [PIM-REGION] add_1m [baseline] first=4242 last=7549 total=3308 last_preload_wr=4239
 [CYCLES] add_1m [PIM-ACT]  total_cycles=9468
 [CMD-COUNTS] add_1m [PIM-ACT] #ACT=28608 #PIM_ACT=3136 #PRE=31744 #RD=81920 #WR=139264
-[PHASE-CMDS] add_1m [PIM-ACT] phase=preload #ACT=26560 #PIM_ACT=0 #PRE=26560 #RD=0 #WR=131072
-[PHASE-CMDS] add_1m [PIM-ACT] phase=region #ACT=0 #PIM_ACT=3136 #PRE=3072 #RD=16384 #WR=8192
-[PHASE-CMDS] add_1m [PIM-ACT] phase=readback #ACT=2048 #PIM_ACT=0 #PRE=2112 #RD=65536 #WR=0
+[PHASE-CMDS] add_1m [PIM-ACT] phase=preload #ACT=26560 #PIM_ACT=0 #PRE=26560 #PMPRE=0 #RD=0 #WR=131072
+[PHASE-CMDS] add_1m [PIM-ACT] phase=region #ACT=0 #PIM_ACT=3136 #PRE=3072 #PMPRE=3072 #RD=16384 #WR=8192
+[PHASE-CMDS] add_1m [PIM-ACT] phase=readback #ACT=2048 #PIM_ACT=0 #PRE=2112 #PMPRE=64 #RD=65536 #WR=0
 [B4-HIST] add_1m [PIM-ACT] total=0
 [AAO-HIST] add_1m [PIM-ACT] total=0
 [PIM-REGION] add_1m [PIM-ACT] first=4279 last=7365 total=3087 last_preload_wr=4239
 [A3-OK] add_1m: baseline and PIM-ACT results are bitwise-identical (65536 bursts).
 [CYCLES] mul_2m [baseline]  total_cycles=19280
 [CMD-COUNTS] mul_2m [baseline] #ACT=67264 #PIM_ACT=0 #PRE=67264 #RD=165888 #WR=279104
-[PHASE-CMDS] mul_2m [baseline] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=52672 #RD=0 #WR=262144
-[PHASE-CMDS] mul_2m [baseline] phase=region #ACT=9088 #PIM_ACT=0 #PRE=9280 #RD=34816 #WR=16960
-[PHASE-CMDS] mul_2m [baseline] phase=readback #ACT=4928 #PIM_ACT=0 #PRE=5312 #RD=131072 #WR=0
+[PHASE-CMDS] mul_2m [baseline] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=52672 #PMPRE=0 #RD=0 #WR=262144
+[PHASE-CMDS] mul_2m [baseline] phase=region #ACT=9088 #PIM_ACT=0 #PRE=9280 #PMPRE=0 #RD=34816 #WR=16960
+[PHASE-CMDS] mul_2m [baseline] phase=readback #ACT=4928 #PIM_ACT=0 #PRE=5312 #PMPRE=0 #RD=131072 #WR=0
 [B4-HIST] mul_2m [baseline] total=0
 [AAO-HIST] mul_2m [baseline] total=0
 [PIM-REGION] mul_2m [baseline] first=8482 last=14767 total=6286 last_preload_wr=8475
 [CYCLES] mul_2m [PIM-ACT]  total_cycles=19194
 [CMD-COUNTS] mul_2m [PIM-ACT] #ACT=58368 #PIM_ACT=6208 #PRE=64576 #RD=163840 #WR=278528
-[PHASE-CMDS] mul_2m [PIM-ACT] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=53248 #RD=0 #WR=262144
-[PHASE-CMDS] mul_2m [PIM-ACT] phase=region #ACT=0 #PIM_ACT=6208 #PRE=6144 #RD=32768 #WR=16384
-[PHASE-CMDS] mul_2m [PIM-ACT] phase=readback #ACT=5120 #PIM_ACT=0 #PRE=5184 #RD=131072 #WR=0
+[PHASE-CMDS] mul_2m [PIM-ACT] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=53248 #PMPRE=0 #RD=0 #WR=262144
+[PHASE-CMDS] mul_2m [PIM-ACT] phase=region #ACT=0 #PIM_ACT=6208 #PRE=6144 #PMPRE=6144 #RD=32768 #WR=16384
+[PHASE-CMDS] mul_2m [PIM-ACT] phase=readback #ACT=5120 #PIM_ACT=0 #PRE=5184 #PMPRE=64 #RD=131072 #WR=0
 [B4-HIST] mul_2m [PIM-ACT] total=0
 [AAO-HIST] mul_2m [PIM-ACT] total=0
 [PIM-REGION] mul_2m [PIM-ACT] first=8515 last=14655 total=6141 last_preload_wr=8475
 [A3-OK] mul_2m: baseline and PIM-ACT results are bitwise-identical (131072 bursts).
 [CYCLES] relu_4m [baseline]  total_cycles=25131
 [CMD-COUNTS] relu_4m [baseline] #ACT=74432 #PIM_ACT=0 #PRE=74432 #RD=296960 #WR=295488
-[PHASE-CMDS] relu_4m [baseline] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=52672 #RD=0 #WR=262144
-[PHASE-CMDS] relu_4m [baseline] phase=region #ACT=11136 #PIM_ACT=0 #PRE=11328 #RD=34816 #WR=33344
-[PHASE-CMDS] relu_4m [baseline] phase=readback #ACT=10048 #PIM_ACT=0 #PRE=10432 #RD=262144 #WR=0
+[PHASE-CMDS] relu_4m [baseline] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=52672 #PMPRE=0 #RD=0 #WR=262144
+[PHASE-CMDS] relu_4m [baseline] phase=region #ACT=11136 #PIM_ACT=0 #PRE=11328 #PMPRE=0 #RD=34816 #WR=33344
+[PHASE-CMDS] relu_4m [baseline] phase=readback #ACT=10048 #PIM_ACT=0 #PRE=10432 #PMPRE=0 #RD=262144 #WR=0
 [B4-HIST] relu_4m [baseline] total=0
 [AAO-HIST] relu_4m [baseline] total=0
 [PIM-REGION] relu_4m [baseline] first=8482 last=16141 total=7660 last_preload_wr=8475
 [CYCLES] relu_4m [PIM-ACT]  total_cycles=25809
 [CMD-COUNTS] relu_4m [PIM-ACT] #ACT=64384 #PIM_ACT=8256 #PRE=72640 #RD=294912 #WR=294912
-[PHASE-CMDS] relu_4m [PIM-ACT] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=53248 #RD=0 #WR=262144
-[PHASE-CMDS] relu_4m [PIM-ACT] phase=region #ACT=0 #PIM_ACT=8256 #PRE=8192 #RD=32768 #WR=32768
-[PHASE-CMDS] relu_4m [PIM-ACT] phase=readback #ACT=11136 #PIM_ACT=0 #PRE=11200 #RD=262144 #WR=0
+[PHASE-CMDS] relu_4m [PIM-ACT] phase=preload #ACT=53248 #PIM_ACT=0 #PRE=53248 #PMPRE=0 #RD=0 #WR=262144
+[PHASE-CMDS] relu_4m [PIM-ACT] phase=region #ACT=0 #PIM_ACT=8256 #PRE=8192 #PMPRE=8192 #RD=32768 #WR=32768
+[PHASE-CMDS] relu_4m [PIM-ACT] phase=readback #ACT=11136 #PIM_ACT=0 #PRE=11200 #PMPRE=64 #RD=262144 #WR=0
 [B4-HIST] relu_4m [PIM-ACT] total=0
 [AAO-HIST] relu_4m [PIM-ACT] total=0
 [PIM-REGION] relu_4m [PIM-ACT] first=8515 last=16391 total=7877 last_preload_wr=8475
