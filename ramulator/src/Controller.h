@@ -2,6 +2,7 @@
 #define __CONTROLLER_H
 
 #include <cassert>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <deque>
@@ -136,6 +137,7 @@ public:
         int bank_count = 16;
         int current_rank = 0;
         int current_bank = 0;
+        int current_bank_idx = 0;
 
         uint8_t data_buffer[DATA_BUFFER_SIZE];
 
@@ -152,6 +154,7 @@ public:
             next_col = 0;
             current_rank = 0;
             current_bank = 0;
+            current_bank_idx = 0;
             macro_count = 0;
             macro_head = 0;
             macro_tail = 0;
@@ -218,8 +221,11 @@ public:
                 macro_head = (macro_head + 1) % MACRO_BUFFER_SIZE;
                 macro_count--;
                 next_col = 0;
-                current_bank = (current_bank + 1) % bank_count;
-                if (current_bank == 0) {
+                // Bank-group aware interleaving (HetMap & OptiPIM)
+                current_bank_idx = (current_bank_idx + 1) % bank_count;
+                int num_bg = 4;
+                current_bank = (current_bank_idx % num_bg) * (bank_count / num_bg) + (current_bank_idx / num_bg);
+                if (current_bank_idx == 0) {
                     current_rank = (current_rank + 1) % rank_count;
                 }
                 refill_macro_buffer();
@@ -258,6 +264,7 @@ public:
     long total_pim_work = 65536;
     long last_ref_epoch = 0;
     long ref_interval = 12480; // tREFI
+    long pim_start_clk = -1;
 
 
 
@@ -669,22 +676,43 @@ public:
         /*** 2. Refresh scheduler & AT-BLC epoch ***/
         refresh->tick_ref();
 
-        if ((policy_type == PolicyType::AT_BLC || policy_type == PolicyType::E_BLC) && clk - last_ref_epoch >= ref_interval) {
-            last_ref_epoch = clk;
-            if (clk > 0 && effective_target_T > 0 && total_pim_work > 0) {
-                double expected_rate = (double)total_pim_work / (double)effective_target_T;
-                double current_rate = (double)pim_gen.pim_work_completed / (double)clk;
-                double delta = (current_rate - expected_rate) / expected_rate;
+        if (warmup_complete && (policy_type == PolicyType::AT_BLC || policy_type == PolicyType::E_BLC)) {
+            if (pim_start_clk < 0) {
+                pim_start_clk = clk;
+                last_ref_epoch = clk;
+            }
+            if (clk - last_ref_epoch >= ref_interval) {
+                last_ref_epoch = clk;
+                long active_pim_cycles = clk - pim_start_clk;
+                if (active_pim_cycles > 0 && effective_target_T > 0 && total_pim_work > 0) {
+                    double expected_rate = (double)total_pim_work / (double)effective_target_T;
+                    double current_rate = (double)pim_gen.pim_work_completed / (double)active_pim_cycles;
+                    double delta = (current_rate - expected_rate) / expected_rate;
 
-                double host_util = (double)epoch_host_served / (double)max(1L, (long)N_limit);
-                epoch_host_served = 0;
+                    double host_util = (double)epoch_host_served / (double)max(1L, (long)N_limit);
+                    epoch_host_served = 0;
 
-                if (delta > blc_lambda && host_util > 0.50) {
-                    N_limit = min(N_max, N_limit + blc_step);
-                } else if (delta < -blc_lambda) {
-                    N_limit = max(N_min, N_limit - blc_step);
-                }
-                N_timeline.push_back(make_pair(clk, N_limit));
+                    // Proportional step: scale with magnitude of delta, clamped to [4, 32]
+                    int dynamic_step = max(4, min(32, (int)(fabs(delta) * 100)));
+
+                    if (delta > blc_lambda && host_util > 0.50) {
+                        N_limit = min(N_max, N_limit + dynamic_step);
+                        // Adaptive Target Margin: when PIM progress is comfortably ahead,
+                        // relax effective target from 0.90*T towards 0.95*T to yield more turns to the host
+                        if (delta > 0.05 && effective_target_T < (long)(0.95 * target_time_T)) {
+                            effective_target_T = (long)(0.95 * target_time_T);
+                        }
+                    } else if (delta < -blc_lambda) {
+                        N_limit = max(N_min, N_limit - dynamic_step);
+                        // Tighten back to conservative 90% margin if PIM falls behind schedule
+                        effective_target_T = (long)(0.90 * target_time_T);
+                    }
+                    if (pim_gen.pim_work_completed >= total_pim_work) {
+                        N_limit = N_max;
+                        tb_pim_turn = false;
+                    }
+                    N_timeline.push_back(make_pair(clk, N_limit));
+                    }
             }
         }
 
@@ -820,13 +848,15 @@ public:
                     }
                 } else if (have_pim) {
                     queue = &pim_q; req = pim_req; cmd = pim_cmd; is_valid_req = true;
-                    consecutive_pim++;
+                    if (tb_pim_turn) consecutive_pim++;
                 } else if (have_host) {
                     queue = hostq; req = host_req; cmd = host_cmd; is_valid_req = true;
-                    consecutive_host++;
+                    if (!tb_pim_turn) consecutive_host++;
                 }
 
-                if (tb_pim_turn && (consecutive_pim >= P_limit || pim_q.q.empty())) {
+                if (pim_gen.pim_work_completed >= total_pim_work) {
+                    tb_pim_turn = false;
+                } else if (tb_pim_turn && (consecutive_pim >= P_limit || pim_q.q.empty())) {
                     tb_pim_turn = false;
                     consecutive_host = 0;
                 } else if (!tb_pim_turn && (consecutive_host >= (N_limit + eblc_elastic_quota) || hostq->q.empty())) {
@@ -836,7 +866,9 @@ public:
                 }
             }
             else { // ST_BLC or AT_BLC (Throughput Balancer)
-                if (tb_pim_turn) {
+                if (pim_gen.pim_work_completed >= total_pim_work) {
+                    tb_pim_turn = false;
+                } else if (tb_pim_turn) {
                     bool pim_empty = pim_q.q.empty();
                     bool pim_limit_reached = (consecutive_pim >= P_limit);
                     bool pim_row_conflict = false;
@@ -869,16 +901,16 @@ public:
                         queue = &pim_q; req = pim_req; cmd = pim_cmd; is_valid_req = true;
                         consecutive_pim++;
                     } else if (have_host) {
+                        // Opportunistic host scheduling: PIM is waiting on timing, do not deduct from host turn quota
                         queue = hostq; req = host_req; cmd = host_cmd; is_valid_req = true;
-                        consecutive_host++;
                     }
                 } else {
                     if (have_host) {
                         queue = hostq; req = host_req; cmd = host_cmd; is_valid_req = true;
                         consecutive_host++;
                     } else if (have_pim) {
+                        // Opportunistic PIM scheduling: Host is waiting on timing, do not deduct from PIM turn quota
                         queue = &pim_q; req = pim_req; cmd = pim_cmd; is_valid_req = true;
-                        consecutive_pim++;
                     }
                 }
             }
