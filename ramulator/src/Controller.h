@@ -137,6 +137,7 @@ public:
         int bank_count = 16;
         int current_rank = 0;
         int current_bank = 0;
+        int current_bank_idx = 0;
 
         uint8_t data_buffer[DATA_BUFFER_SIZE];
 
@@ -153,6 +154,7 @@ public:
             next_col = 0;
             current_rank = 0;
             current_bank = 0;
+            current_bank_idx = 0;
             macro_count = 0;
             macro_head = 0;
             macro_tail = 0;
@@ -219,8 +221,11 @@ public:
                 macro_head = (macro_head + 1) % MACRO_BUFFER_SIZE;
                 macro_count--;
                 next_col = 0;
-                current_bank = (current_bank + 1) % bank_count;
-                if (current_bank == 0) {
+                // Bank-group aware interleaving (HetMap & OptiPIM)
+                current_bank_idx = (current_bank_idx + 1) % bank_count;
+                int num_bg = 4;
+                current_bank = (current_bank_idx % num_bg) * (bank_count / num_bg) + (current_bank_idx / num_bg);
+                if (current_bank_idx == 0) {
                     current_rank = (current_rank + 1) % rank_count;
                 }
                 refill_macro_buffer();
@@ -702,6 +707,10 @@ public:
                         // Tighten back to conservative 90% margin if PIM falls behind schedule
                         effective_target_T = (long)(0.90 * target_time_T);
                     }
+                    if (pim_gen.pim_work_completed >= total_pim_work) {
+                        N_limit = N_max;
+                        tb_pim_turn = false;
+                    }
                     N_timeline.push_back(make_pair(clk, N_limit));
                     }
             }
@@ -845,7 +854,9 @@ public:
                     consecutive_host++;
                 }
 
-                if (tb_pim_turn && (consecutive_pim >= P_limit || pim_q.q.empty())) {
+                if (pim_gen.pim_work_completed >= total_pim_work) {
+                    tb_pim_turn = false;
+                } else if (tb_pim_turn && (consecutive_pim >= P_limit || pim_q.q.empty())) {
                     tb_pim_turn = false;
                     consecutive_host = 0;
                 } else if (!tb_pim_turn && (consecutive_host >= (N_limit + eblc_elastic_quota) || hostq->q.empty())) {
@@ -855,7 +866,9 @@ public:
                 }
             }
             else { // ST_BLC or AT_BLC (Throughput Balancer)
-                if (tb_pim_turn) {
+                if (pim_gen.pim_work_completed >= total_pim_work) {
+                    tb_pim_turn = false;
+                } else if (tb_pim_turn) {
                     bool pim_empty = pim_q.q.empty();
                     bool pim_limit_reached = (consecutive_pim >= P_limit);
                     bool pim_row_conflict = false;

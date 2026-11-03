@@ -39,10 +39,17 @@ def load_metrics(csv_path):
             })
     return data
 
-def generate_plots():
-    results_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results')
-    os.makedirs(results_dir, exist_ok=True)
-    csv_path = os.path.join(results_dir, 'compass_evaluation_metrics.csv')
+def generate_plots(output_dir=None):
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    results_dir = os.path.join(base_dir, 'results')
+    if output_dir:
+        out_dir = output_dir if os.path.isabs(output_dir) else os.path.join(base_dir, output_dir)
+    else:
+        out_dir = os.path.join(results_dir, 'plots_new')
+    os.makedirs(out_dir, exist_ok=True)
+    csv_path = os.path.join(out_dir, 'compass_evaluation_metrics.csv')
+    if not os.path.exists(csv_path):
+        csv_path = os.path.join(results_dir, 'compass_evaluation_metrics.csv')
     
     data = load_metrics(csv_path)
     if not data:
@@ -132,8 +139,8 @@ def generate_plots():
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     
-    out_png = os.path.join(results_dir, 'compass_evaluation_metrics.png')
-    out_pdf = os.path.join(results_dir, 'compass_evaluation_metrics.pdf')
+    out_png = os.path.join(out_dir, 'compass_evaluation_metrics.png')
+    out_pdf = os.path.join(out_dir, 'compass_evaluation_metrics.pdf')
     plt.savefig(out_png, dpi=300)
     plt.savefig(out_pdf)
     plt.close()
@@ -169,15 +176,17 @@ def generate_plots():
         ax_q.text(bar.get_x() + bar.get_width()/2.0, yval + 0.006, f"{yval:.3f}x", ha='center', va='bottom', fontsize=9, fontweight='semibold')
 
     plt.tight_layout()
-    out_prea_png = os.path.join(results_dir, 'prea_and_qos_comparison.png')
-    out_prea_pdf = os.path.join(results_dir, 'prea_and_qos_comparison.pdf')
+    out_prea_png = os.path.join(out_dir, 'prea_and_qos_comparison.png')
+    out_prea_pdf = os.path.join(out_dir, 'prea_and_qos_comparison.pdf')
     plt.savefig(out_prea_png, dpi=300)
     plt.savefig(out_prea_pdf)
     plt.close()
     print(f"[SUCCESS] Saved PREA and QoS plots: {out_prea_png} and {out_prea_pdf}")
 
     # 3. Dynamic N(t) Adaptation Plot if timeline log exists
-    timeline_csv = os.path.join(results_dir, 'atblc_N_timeline_ch0.csv')
+    timeline_csv = os.path.join(out_dir, 'atblc_N_timeline_ch0.csv')
+    if not os.path.exists(timeline_csv):
+        timeline_csv = os.path.join(results_dir, 'atblc_N_timeline_ch0.csv')
     if os.path.exists(timeline_csv):
         cycles = []
         n_vals = []
@@ -199,12 +208,13 @@ def generate_plots():
             plt.ylabel('Host Turn Quota $N$', fontsize=10)
             plt.legend(loc='upper right', frameon=True)
             plt.tight_layout()
-            out_nt_png = os.path.join(results_dir, 'atblc_N_adaptation.png')
-            out_nt_pdf = os.path.join(results_dir, 'atblc_N_adaptation.pdf')
+            out_nt_png = os.path.join(out_dir, 'atblc_N_adaptation.png')
+            out_nt_pdf = os.path.join(out_dir, 'atblc_N_adaptation.pdf')
             plt.savefig(out_nt_png, dpi=300)
             plt.savefig(out_nt_pdf)
             plt.close()
             print(f"[SUCCESS] Saved N(t) timeline plots: {out_nt_png} and {out_nt_pdf}")
 
 if __name__ == '__main__':
-    generate_plots()
+    target_dir = sys.argv[1] if len(sys.argv) > 1 else 'results/plots_new'
+    generate_plots(output_dir=target_dir)
