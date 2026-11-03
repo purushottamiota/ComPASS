@@ -35,6 +35,14 @@
 #include <map>
 #include <utility>
 
+struct PhaseCnt {
+    uint64_t act = 0;
+    uint64_t pimact = 0;
+    uint64_t pre = 0;
+    uint64_t rd = 0;
+    uint64_t wr = 0;
+};
+
 static std::map<std::pair<int, int>, uint64_t> g_b4Hist;
 static std::map<uint8_t, uint64_t> g_aaoHist;
 static uint8_t g_rowOptype[64];
@@ -45,6 +53,11 @@ static uint64_t g_numRead = 0;
 static uint64_t g_numWrite = 0;
 static uint64_t g_firstPim = UINT64_MAX;
 static uint64_t g_lastPim = 0;
+static uint64_t g_lastPreloadWrite = 0;
+static PhaseCnt g_curPhaseCnt;
+static PhaseCnt g_atFirstPhaseCnt;
+static PhaseCnt g_atLastPhaseCnt;
+static bool g_haveFirstPim = false;
 
 namespace DRAMSim
 {
@@ -57,6 +70,11 @@ void resetGlobalCommandCounts()
     g_numWrite = 0;
     g_firstPim = UINT64_MAX;
     g_lastPim = 0;
+    g_lastPreloadWrite = 0;
+    g_curPhaseCnt = {};
+    g_atFirstPhaseCnt = {};
+    g_atLastPhaseCnt = {};
+    g_haveFirstPim = false;
     g_b4Hist.clear();
     g_aaoHist.clear();
     for (int i = 0; i < 64; i++) g_rowOptype[i] = 0xFF;
@@ -71,6 +89,36 @@ void printGlobalCommandCounts(const std::string& label)
               << " #RD=" << g_numRead
               << " #WR=" << g_numWrite
               << std::endl;
+
+    PhaseCnt preload = g_atFirstPhaseCnt;
+    PhaseCnt region = {
+        g_atLastPhaseCnt.act - g_atFirstPhaseCnt.act,
+        g_atLastPhaseCnt.pimact - g_atFirstPhaseCnt.pimact,
+        g_atLastPhaseCnt.pre - g_atFirstPhaseCnt.pre,
+        g_atLastPhaseCnt.rd - g_atFirstPhaseCnt.rd,
+        g_atLastPhaseCnt.wr - g_atFirstPhaseCnt.wr
+    };
+    PhaseCnt readback = {
+        g_curPhaseCnt.act - g_atLastPhaseCnt.act,
+        g_curPhaseCnt.pimact - g_atLastPhaseCnt.pimact,
+        g_curPhaseCnt.pre - g_atLastPhaseCnt.pre,
+        g_curPhaseCnt.rd - g_atLastPhaseCnt.rd,
+        g_curPhaseCnt.wr - g_atLastPhaseCnt.wr
+    };
+
+    std::cout << "[PHASE-CMDS] " << label << " phase=preload"
+              << " #ACT=" << preload.act << " #PIM_ACT=" << preload.pimact
+              << " #PRE=" << preload.pre << " #RD=" << preload.rd << " #WR=" << preload.wr
+              << std::endl;
+    std::cout << "[PHASE-CMDS] " << label << " phase=region"
+              << " #ACT=" << region.act << " #PIM_ACT=" << region.pimact
+              << " #PRE=" << region.pre << " #RD=" << region.rd << " #WR=" << region.wr
+              << std::endl;
+    std::cout << "[PHASE-CMDS] " << label << " phase=readback"
+              << " #ACT=" << readback.act << " #PIM_ACT=" << readback.pimact
+              << " #PRE=" << readback.pre << " #RD=" << readback.rd << " #WR=" << readback.wr
+              << std::endl;
+
     uint64_t b4_total = 0;
     for (auto& kv : g_b4Hist)
     {
@@ -96,6 +144,7 @@ void printGlobalCommandCounts(const std::string& label)
               << " first=" << g_firstPim
               << " last=" << g_lastPim
               << " total=" << (g_lastPim >= g_firstPim ? (g_lastPim - g_firstPim + 1) : 0)
+              << " last_preload_wr=" << g_lastPreloadWrite
               << std::endl;
 }
 }
@@ -237,14 +286,28 @@ void MemoryController::setBankStates(size_t rank, size_t bank, CurrentBankState 
 void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
 {
     static const bool kTraceModeSwitch = getenv("PIM_TRACE_MODE_SWITCH") != nullptr;
+    bool isPimRegion = false;
     if (poppedBusPacket)
     {
         const std::string& tg = poppedBusPacket->tag;
-        if (poppedBusPacket->isPIM || poppedBusPacket->busPacketType == PIM_ACT ||
-            tg.find("PARK_") != std::string::npos || tg.find("_TO_") != std::string::npos || tg.rfind("PIM", 0) == 0)
+        isPimRegion = (poppedBusPacket->isPIM || poppedBusPacket->busPacketType == PIM_ACT ||
+                       tg.find("PARK_") != std::string::npos ||
+                       tg.find("SB_TO_HAB") != std::string::npos ||
+                       tg.find("HAB_TO_SB") != std::string::npos ||
+                       tg == "PIM" || tg.rfind("PIM", 0) == 0);
+        if (isPimRegion)
         {
             g_firstPim = std::min(g_firstPim, currentClockCycle);
             g_lastPim = std::max(g_lastPim, currentClockCycle);
+            if (!g_haveFirstPim)
+            {
+                g_atFirstPhaseCnt = g_curPhaseCnt;
+                g_haveFirstPim = true;
+            }
+        }
+        else if (!g_haveFirstPim && poppedBusPacket->busPacketType == WRITE)
+        {
+            g_lastPreloadWrite = currentClockCycle;
         }
 
         if (kTraceModeSwitch)
@@ -275,6 +338,7 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
     {
         case READ:
             g_numRead++;
+            g_curPhaseCnt.rd++;
             if (poppedBusPacket->isPIM && (*ranks)[rank]->pimRank->isPIMACTMode() &&
                 poppedBusPacket->optype != g_rowOptype[rank])
             {
@@ -310,6 +374,7 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
 
         case WRITE:
             g_numWrite++;
+            g_curPhaseCnt.wr++;
             if (poppedBusPacket->isPIM && (*ranks)[rank]->pimRank->isPIMACTMode() &&
                 poppedBusPacket->optype != g_rowOptype[rank])
             {
@@ -346,6 +411,7 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
 
         case ACTIVATE:
             g_numActivate++;
+            g_curPhaseCnt.act++;
             setBankStates(rank, bank, RowActive, ACTIVATE, 0,
                           max(currentClockCycle + config.tRC, bankStates[rank][bank].nextActivate));
             bankStates[rank][bank].openRowAddress = poppedBusPacket->row;
@@ -372,6 +438,7 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
         case PIM_ACT:
         {
             g_numPimAct++;
+            g_curPhaseCnt.pimact++;
             if (rank < 64)
             {
                 g_rowOptype[rank] = poppedBusPacket->optype;
@@ -396,6 +463,7 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
 
         case PRECHARGE:
             g_numPrecharge++;
+            g_curPhaseCnt.pre++;
             if ((*ranks)[rank]->pimRank->isPIMACTMode())
             {
                 uint8_t activeOpt = (*ranks)[rank]->pimRank->getActiveOptype();
@@ -424,6 +492,11 @@ void MemoryController::updateCommandQueue(BusPacket* poppedBusPacket)
             ERROR("== Error - Popped a command we shouldn't have of type : "
                   << poppedBusPacket->busPacketType);
             exit(0);
+    }
+
+    if (isPimRegion)
+    {
+        g_atLastPhaseCnt = g_curPhaseCnt;
     }
 
     // issue on bus and print debug

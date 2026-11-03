@@ -68,10 +68,10 @@ For detailed architectural specifications, parameter choices, and paper inconsis
   - Measured baseline transition across all six phases (`parkIn`, `SB->HAB`, `HAB->HAB_PIM`, compute, `HAB_PIM->HAB`, `HAB->SB`, `parkOut`) takes **$351\text{--}352\text{ ns}$**, perfectly matching the paper's reported *"about 350 ns"*.
   - PIM-ACT eliminates 100% of these mode-switch transactions.
 - **Measurement Scope & Speedup Reproduction**:
-  - **GEMV ($4096 \times 4096$)**: Evaluated over the PIM compute region ($13,483$ cycles / $13.5\,\mu\text{s}$), **GEMV ($AAO=0$) achieves $+3.25\%$ speedup (vs $+2.54\%$ paper target)**, matching within **0.71 percentage points** (theoretical gain from eliminating one 351-cycle switch predicts $+2.67\%$, within **0.13 pp**). Whole-run speedup is $+0.62\%$ ($AAO=0$) / $+1.28\%$ ($AAO=1$) due to host preload timer dilution ($76.5\%$ of total runtime).
-  - **ADD ($1\text{M}$)**: Region gain $+7.16\%$ (whole-run $+1.67\%$).
-  - **MUL ($2\text{M}$)**: Region gain $+2.36\%$ (whole-run $+0.45\%$).
-  - **ReLU ($4\text{M}$)**: Region slowdown $-2.75\%$ (whole-run $-2.63\%$). **$63\%$ of the whole-run slowdown ($428$ cycles)** is caused by post-compute host readback row conflicts against open bank rows.
+  - **GEMV ($4096 \times 4096$)**: Evaluated over the PIM compute region ($13,483$ cycles / $13.5\,\mu\text{s}$), **GEMV ($AAO=0$) achieves $+3.25\%$ speedup (vs $+2.54\%$ paper target)**, matching within **0.71 percentage points** (theoretical gain from eliminating one 351-cycle switch predicts $+2.67\%$, within **0.13 pp**). Re-anchored to the PIM-ACT start cycle ($13,440 \rightarrow 13,059$ cycles), region gain is **$+2.92\%$** (within **0.38 pp** of the paper target). Whole-run speedup is $+0.62\%$ ($AAO=0$) / $+1.28\%$ ($AAO=1$) due to host preload timer dilution ($76.5\%$ of total runtime).
+  - **ADD ($1\text{M}$)**: Region gain $+7.16\%$ (re-anchored $+5.96\%$; whole-run $+1.67\%$).
+  - **MUL ($2\text{M}$)**: Region gain $+2.36\%$ (re-anchored $+1.82\%$; whole-run $+0.45\%$).
+  - **ReLU ($4\text{M}$)**: Region slowdown $-2.75\%$ (re-anchored $-3.17\%$; whole-run $-2.63\%$). **$63\%$ of the whole-run slowdown ($428$ cycles)** occurs in host readback, where empirical phase-split command tracing (`[PHASE-CMDS]`) confirms $+1,088$ extra `#ACT` and $+768$ extra `#PRE` vs baseline (+896 ACT / +896 PRE vs naive) due to host read streams conflicting with open bank rows.
 - **Golden Reference & Baseline Invariance**:
   - 100% bitwise FP16 agreement (`[A3-OK]`, 0 mismatches) across all paper kernels.
   - Baseline cycle counts strictly preserved (GEMV: 57,923, ADD: 9,626, MUL: 19,280, ReLU: 25,131).
@@ -115,6 +115,20 @@ Simulated on 64 PIM channels with 16 banks per rank (`system_hbm_64ch.ini`):
 | **ReLU (4M)** | Baseline | 8,482 | 7,660 | 8,989 | **25,131** | — | — |
 | | PREA-Aware (AAO=0/1)| 8,515 | 7,877 | 9,417 | **25,809** | **−2.75%** | **−2.63%** |
 | | Naive PREA (AAO=0/1)| 8,515 | 13,357 | 9,031 | **30,903** | −42.65% | −18.68% |
+
+#### Boundary Decomposition: Phase Overhead Breakdown
+
+$$\text{Net Difference} = (\text{Switch Removed} - \text{Region Saved}) + \text{Preload Shift} + \text{Readback Shift}$$
+
+| Kernel | Switch Removed | Region Saved | Region Overhead (Switch − Region Saved) | Preload Shift | Readback Shift | Total Net Difference | Net Whole-Run Saved |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **GEMV** | 351 | 424 | **−73** | +43 | +25 | **−5** | **+356** |
+| **ADD**  | 352 | 221 | **131** | +37 | +26 | **194** | **+158** |
+| **MUL**  | 351 | 145 | **206** | +33 | +26 | **265** | **+86** |
+| **ReLU** | 351 | −217 (slowdown) | **568** | +33 | +428 | **1,029** | **−678** (slowdown) |
+
+> **Part A Reproduction Finding:**  
+> Whole-run, Fig. 7 is not reproduced due to host preload timer dilution ($77\%$ of GEMV cycles). Measured over the PIM region, GEMV without AAO matches the paper within about 0.4–0.7 points ($+2.92\%\text{--}+3.25\%$ vs $+2.54\%$), consistent with one ~350 ns switch over a ~13.5 µs kernel. GEMV with AAO (+6.3% vs +9.65%), ADD, MUL and ReLU are not reproduced; their gaps are decomposed by phase above. Empirical phase-split command tracking confirms that the ReLU readback slowdown stems from post-compute host read conflicts on un-precharged banks (+1,088 ACT / +768 PRE vs baseline; +896 ACT / +896 PRE vs naive). Remaining region gaps are quantified by the overhead decomposition.
 
 ---
 
