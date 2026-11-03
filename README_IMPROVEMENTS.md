@@ -94,6 +94,15 @@ In the original ComPASS paper:
 
 ---
 
+### 3.7. Zero-Leak Opportunistic Turn Quota Accounting
+* **File:** `ramulator/src/Controller.h`
+* **Mechanism:**
+  * In basic ComPASS, when the primary turn owner had no ready requests (e.g., waiting on DRAM timing constraints), the controller opportunistically serviced a request from the other stream to avoid idling the memory bus. However, it inadvertently incremented the other stream's consecutive counter (`consecutive_host++` during PIM turn, or `consecutive_pim++` during Host turn).
+  * This charged that stream for work performed during idle bus slack, meaning that when the arbiter officially switched turns, the incoming stream started with an already partially depleted quota and was evicted prematurely.
+  * We decoupled opportunistic fallback fills from turn quota accounting: fallback requests are serviced without incrementing the other stream's turn counter. This guarantees that both the CPU host and PIM accelerators always receive their full, uncompromised turn quotas during their dedicated turns.
+
+---
+
 ## 4. Quantitative Results & Performance Comparison
 
 Evaluated on **16 Out-of-Order CPU Cores** running **16 SPEC CPU2006 benchmark traces** concurrently with a **PIM GEMV matrix-vector stream (65,536 micro-ops)** over a **4-channel JEDEC LPDDR5-6400 DRAM subsystem**:
@@ -195,6 +204,14 @@ Two mathematical guarantees prevent late deadline breaches:
 * On Windows, passing this string to `std::stoul` triggered `std::out_of_range` because `47,151,403,180,864 > 4,294,967,295`.
 * Upgrading to `std::stoull` (unsigned long long) guarantees at least 64 bits on all compliant C++11 compilers.
 * **Simulation Fidelity Impact:** Ramulator's LPDDR5 address translation uses 34 total address bits (4 channels * 2 ranks * 16 banks * 65536 rows * 64 columns * 32B cacheline = 16 GB address space). A 32-bit truncation would silently discard bits 32 and 33, causing artificial row and bank aliasing. Upgrading to 64-bit parsing preserves the true address stream and ensures accurate row-hit and bank-conflict simulation.
+
+---
+
+### Q7: Why was opportunistic fallback charging an issue in basic ComPASS, and how does zero-leak turn accounting improve scheduling fairness?
+**Answer:**
+* When PIM was waiting on a bank to open during PIM's turn, servicing a host request was work-conserving, but basic ComPASS charged `consecutive_host++`. As a result, when the arbiter officially switched to the Host's turn, `consecutive_host` was already non-zero. The host reached `consecutive_host >= N_limit` prematurely and was evicted from the bus before receiving its full quota of N commands.
+* The exact same problem happened in reverse: when host requests were waiting on timing, opportunistic PIM requests charged `consecutive_pim++`.
+* Zero-leak accounting ensures turn counters are strictly incremented only when servicing a stream during its own dedicated turn, giving both CPU cores and PIM accelerators their full, guaranteed burst allocation without premature eviction.
 
 ---
 
