@@ -234,13 +234,18 @@ void LPDDR5::init_timing()
 
     // CAS <-> PREA
     t[int(Command::RD)].push_back({Command::PREA, 1, s.nRTP});
+    t[int(Command::RDA)].push_back({Command::PREA, 1, s.nRTP});
     t[int(Command::WR)].push_back({Command::PREA, 1, s.nCWL + s.nBL + s.nWR});
+    t[int(Command::WRA)].push_back({Command::PREA, 1, s.nCWL + s.nBL + s.nWR});
 
     // RAS <-> RAS
     t[int(Command::ACT)].push_back({Command::ACT, 1, s.nRRD});
     t[int(Command::ACT)].push_back({Command::ACT, 4, s.nFAW});
     t[int(Command::ACT)].push_back({Command::PREA, 1, s.nRAS});
     t[int(Command::PREA)].push_back({Command::ACT, 1, s.nRPab});
+    t[int(Command::PREA)].push_back({Command::PREA, 1, s.nRPab});
+    t[int(Command::PREA)].push_back({Command::PRE, 1, s.nRPab});
+    t[int(Command::PRE)].push_back({Command::PREA, 1, s.nRPpb});
     t[int(Command::PRE)].push_back({Command::PRE, 1, s.nPPD});
 
     // RAS <-> REF
