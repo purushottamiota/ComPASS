@@ -309,13 +309,13 @@ def main():
 
     # Generate Summary Table
     report_lines = []
-    report_lines.append("=" * 136)
-    report_lines.append("                                            ComPASS SIMULATION EVALUATION RESULTS                                   ")
-    report_lines.append("               Hardware: 16 OOO CPU Cores, 4 Channels LPDDR5-6400 (3200MHz, BL16, 2 Ranks, 16 Banks)                 ")
-    report_lines.append("               Workload: 16 SPEC CPU2006 Traces + PIM GEMV Stream (65,536 micro-ops, PREA Modeled)                   ")
-    report_lines.append("=" * 136)
-    report_lines.append(f"{'Scheduling Policy':<32} | {'Host IPC':<10} | {'Slowdown':<10} | {'Weighted Spd':<12} | {'PIM BW':<12} | {'PIM Spd':<9} | {'PREAs':<9} | {'QoS Metric':<10} | {'Ch StdDev':<10}")
-    report_lines.append("-" * 136)
+    report_lines.append("=" * 156)
+    report_lines.append("                                                ComPASS SIMULATION EVALUATION RESULTS                                       ")
+    report_lines.append("                   Hardware: 16 OOO CPU Cores, 4 Channels LPDDR5-6400 (3200MHz, BL16, 2 Ranks, 16 Banks)                     ")
+    report_lines.append("                   Workload: 16 SPEC CPU2006 Traces + PIM GEMV Stream (65,536 micro-ops, PREA Modeled)                       ")
+    report_lines.append("=" * 156)
+    report_lines.append(f"{'Scheduling Policy':<30} | {'Host IPC':<9} | {'Slowdown':<9} | {'Weighted Spd':<12} | {'PIM Reqs':<10} | {'Hit Rate':<9} | {'PIM BW':<11} | {'PIM Spd':<8} | {'PREAs':<8} | {'QoS Metric':<10} | {'Ch StdDev':<9}")
+    report_lines.append("-" * 156)
 
     # Prepare CSV data
     summary_csv_rows = []
