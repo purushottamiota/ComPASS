@@ -335,6 +335,7 @@ def main():
             wspeedup = 1.0
             wspeedup_str = "1.0000x"
             pim_reqs_str = "N/A"
+            hit_rate_str = "N/A"
             pim_bw_str = "N/A"
             speedup = 0.0
             speedup_str = "N/A"
@@ -342,6 +343,7 @@ def main():
             qos_val = 0.0
             pim_bw_val = 0.0
         else:
+            hit_rate_str = f"{m['pim_hit_rate']:5.2f}%"
             slowdown = (1.0 - (host_ipc / base_ipc)) * 100.0 if base_ipc > 0 else 0.0
             slowdown_str = f"{slowdown:5.2f}%"
 
@@ -366,7 +368,7 @@ def main():
             qos_val = m['qos_metric']
             qos_str = f"{qos_val:6.3f}x"
 
-        report_lines.append(f"{exp['name']:<32} | {host_ipc:10.4f} | {slowdown_str:<10} | {wspeedup_str:<12} | {pim_bw_str:<12} | {speedup_str:<9} | {preas:<9} | {qos_str:<10} | {ch_std:9.3f}")
+        report_lines.append(f"{exp['name']:<30} | {host_ipc:9.4f} | {slowdown_str:<9} | {wspeedup_str:<12} | {pim_reqs_str:<10} | {hit_rate_str:<9} | {pim_bw_str:<11} | {speedup_str:<8} | {preas:<8} | {qos_str:<10} | {ch_std:9.3f}")
 
         summary_csv_rows.append({
             'Policy': exp['name'],
@@ -375,6 +377,7 @@ def main():
             'Host_Slowdown_Pct': f"{slowdown:.2f}",
             'Weighted_Speedup': f"{wspeedup:.4f}",
             'PIM_Requests': m['pim_reqs'],
+            'PIM_Hit_Rate_Pct': f"{m['pim_hit_rate']:.2f}",
             'PIM_BW_GBps': f"{pim_bw_val:.3f}",
             'PIM_Speedup': f"{speedup:.2f}",
             'PREA_Commands': preas,
@@ -410,8 +413,8 @@ def main():
     with open(summary_csv_path, 'w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=[
             'Policy', 'Key', 'Host_IPC', 'Host_Slowdown_Pct', 'Weighted_Speedup',
-            'PIM_Requests', 'PIM_BW_GBps', 'PIM_Speedup', 'PREA_Commands',
-            'QoS_Metric', 'Ch_BW_StdDev', 'Total_Cycles'
+            'PIM_Requests', 'PIM_Hit_Rate_Pct', 'PIM_BW_GBps', 'PIM_Speedup',
+            'PREA_Commands', 'QoS_Metric', 'Ch_BW_StdDev', 'Total_Cycles'
         ])
         writer.writeheader()
         writer.writerows(summary_csv_rows)
