@@ -220,6 +220,10 @@ def main():
     base_cfg = os.path.join(configs_dir, 'LPDDR5-PIM.cfg')
     ramulator_bin = os.path.join(base_dir, 'ramulator')
 
+    if not os.path.exists(ramulator_bin):
+        print(f"Error: Executable '{ramulator_bin}' not found! Run 'make -j' first.")
+        sys.exit(1)
+
     experiments = [
         {
             'name': 'Baseline (Host Standalone)',
