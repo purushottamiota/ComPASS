@@ -1,0 +1,35 @@
+The first slides till (including) "THE PROBLEM" are good and keep them same. (same as the attached presentation)
+
+Then create the following parts ->
+
+3: "ComPASS's SOLUTIONS TO THESE PROBLEMS"
+    first slide: What is ComPASS paper doing in broad sense like its creating a structure to run and schedule PIM instructins fast and efficiently to ensure fairness etc. and solve previous problems.
+    next few slides: Explain compass included PIM-ACT instructions to solve the problem of mode switching overhead
+                include the old workflow and the new workflow. Make sure to keep it in simple and quality language. Give full forms if a non-trivial abreviation is used.
+                use diagrams for showing the workflow. Keep less text for not overwhelming the user. Elegently convence the reader that PIM-ACT solved (or improved) upon previous conventional way.
+                Also include where the old and new ways are used.
+    next few slides:
+                Similarly we convince how next problem of fair and effcient scheduling is solved to improve over contention problem and the problems discussed before.
+                Then introduce the simple scheduling like FR-FCFS, Batch scheduling (explain then in simple language each briefly with the problems involved with them, you may take one slide for each).
+                Then in next slides introduce comPASS's algorithms to solve these issues in order, first ST-BLC, then AT-BLC. Explain with diagram, less text and simple language each of them with convincing how they solve the problems discussed below.;
+
+4: "OUR ADDITION OVER ComPASS"
+    in first few slides: explain E-BLC with diagrams, simple language, the things it solves.
+
+5: "EXPERIMENTS DONE"
+    in first few slides: explain how we used two simulators and what each one is used for, be specific, simple language and quality content.
+
+6: "RESULTS FOUND"
+    in first few slides: Show the attahced graphs and results one-by-one. No need to explain, we will explain then in front of Proof. Decide the order properly.
+
+5: "CHALLENGES, BUGS and FIXES"
+    include what BUGS and FIXES we come up with. Keep in simple langauge so that they are easy to understand.
+
+6: "FUTURE WORK"
+    include the future work possible. again keep in simple langauge.
+
+
+NOTES:
+    1: use simple langauge.
+    2: include the full forms of non-trivial short-forms used. But still need to keep less text in slides.
+
