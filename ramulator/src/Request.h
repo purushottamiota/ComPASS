@@ -13,15 +13,14 @@ namespace ramulator
 class Request
 {
 public:
-    bool is_first_command;
+    bool is_first_command = true;
     bool is_pim = false;
     uint8_t optype = 0;
     int batch_id = 0;
-    long addr;
-    // long addr_row;
+    long addr = -1;
     vector<int> addr_vec;
     // specify which core this request sent from, for virtual address translation
-    int coreid;
+    int coreid = 0;
 
     enum class Type
     {
@@ -43,17 +42,53 @@ public:
     function<void(Request&)> callback; // call back with more info
 
     Request(long addr, Type type, int coreid = 0)
-        : is_first_command(true), addr(addr), coreid(coreid), type(type),
-      callback([](Request& req){}) {}
+        : is_first_command(true),
+          is_pim(type == Type::PIM_READ || type == Type::PIM_WRITE),
+          optype(0),
+          batch_id(0),
+          addr(addr),
+          coreid(coreid),
+          type(type),
+          arrive(-1),
+          depart(-1),
+          callback([](Request& req){}) {}
 
     Request(long addr, Type type, function<void(Request&)> callback, int coreid = 0)
-        : is_first_command(true), addr(addr), coreid(coreid), type(type), callback(callback) {}
+        : is_first_command(true),
+          is_pim(type == Type::PIM_READ || type == Type::PIM_WRITE),
+          optype(0),
+          batch_id(0),
+          addr(addr),
+          coreid(coreid),
+          type(type),
+          arrive(-1),
+          depart(-1),
+          callback(callback) {}
 
-    Request(vector<int>& addr_vec, Type type, function<void(Request&)> callback, int coreid = 0)
-        : is_first_command(true), addr_vec(addr_vec), coreid(coreid), type(type), callback(callback) {}
+    Request(const vector<int>& addr_vec, Type type, function<void(Request&)> callback, int coreid = 0)
+        : is_first_command(true),
+          is_pim(type == Type::PIM_READ || type == Type::PIM_WRITE),
+          optype(0),
+          batch_id(0),
+          addr(-1),
+          addr_vec(addr_vec),
+          coreid(coreid),
+          type(type),
+          arrive(-1),
+          depart(-1),
+          callback(callback) {}
 
     Request()
-        : is_first_command(true), coreid(0) {}
+        : is_first_command(true),
+          is_pim(false),
+          optype(0),
+          batch_id(0),
+          addr(-1),
+          coreid(0),
+          type(Type::READ),
+          arrive(-1),
+          depart(-1),
+          callback([](Request& req){}) {}
 };
 
 } /*namespace ramulator*/
