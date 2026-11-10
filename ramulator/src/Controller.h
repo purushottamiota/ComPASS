@@ -137,7 +137,6 @@ public:
         int bank_count = 16;
         int current_rank = 0;
         int current_bank = 0;
-        int current_bank_idx = 0;
 
         uint8_t data_buffer[DATA_BUFFER_SIZE];
 
@@ -154,7 +153,6 @@ public:
             next_col = 0;
             current_rank = 0;
             current_bank = 0;
-            current_bank_idx = 0;
             macro_count = 0;
             macro_head = 0;
             macro_tail = 0;
@@ -221,11 +219,8 @@ public:
                 macro_head = (macro_head + 1) % MACRO_BUFFER_SIZE;
                 macro_count--;
                 next_col = 0;
-                // Bank-group aware interleaving (HetMap & OptiPIM)
-                current_bank_idx = (current_bank_idx + 1) % bank_count;
-                int num_bg = 4;
-                current_bank = (current_bank_idx % num_bg) * (bank_count / num_bg) + (current_bank_idx / num_bg);
-                if (current_bank_idx == 0) {
+                current_bank = (current_bank + 1) % bank_count;
+                if (current_bank == 0) {
                     current_rank = (current_rank + 1) % rank_count;
                 }
                 refill_macro_buffer();
@@ -707,10 +702,6 @@ public:
                         // Tighten back to conservative 90% margin if PIM falls behind schedule
                         effective_target_T = (long)(0.90 * target_time_T);
                     }
-                    if (pim_gen.pim_work_completed >= total_pim_work) {
-                        N_limit = N_max;
-                        tb_pim_turn = false;
-                    }
                     N_timeline.push_back(make_pair(clk, N_limit));
                     }
             }
@@ -848,15 +839,13 @@ public:
                     }
                 } else if (have_pim) {
                     queue = &pim_q; req = pim_req; cmd = pim_cmd; is_valid_req = true;
-                    if (tb_pim_turn) consecutive_pim++;
+                    consecutive_pim++;
                 } else if (have_host) {
                     queue = hostq; req = host_req; cmd = host_cmd; is_valid_req = true;
-                    if (!tb_pim_turn) consecutive_host++;
+                    consecutive_host++;
                 }
 
-                if (pim_gen.pim_work_completed >= total_pim_work) {
-                    tb_pim_turn = false;
-                } else if (tb_pim_turn && (consecutive_pim >= P_limit || pim_q.q.empty())) {
+                if (tb_pim_turn && (consecutive_pim >= P_limit || pim_q.q.empty())) {
                     tb_pim_turn = false;
                     consecutive_host = 0;
                 } else if (!tb_pim_turn && (consecutive_host >= (N_limit + eblc_elastic_quota) || hostq->q.empty())) {
@@ -866,9 +855,7 @@ public:
                 }
             }
             else { // ST_BLC or AT_BLC (Throughput Balancer)
-                if (pim_gen.pim_work_completed >= total_pim_work) {
-                    tb_pim_turn = false;
-                } else if (tb_pim_turn) {
+                if (tb_pim_turn) {
                     bool pim_empty = pim_q.q.empty();
                     bool pim_limit_reached = (consecutive_pim >= P_limit);
                     bool pim_row_conflict = false;
@@ -901,16 +888,16 @@ public:
                         queue = &pim_q; req = pim_req; cmd = pim_cmd; is_valid_req = true;
                         consecutive_pim++;
                     } else if (have_host) {
-                        // Opportunistic host scheduling: PIM is waiting on timing, do not deduct from host turn quota
                         queue = hostq; req = host_req; cmd = host_cmd; is_valid_req = true;
+                        consecutive_host++;
                     }
                 } else {
                     if (have_host) {
                         queue = hostq; req = host_req; cmd = host_cmd; is_valid_req = true;
                         consecutive_host++;
                     } else if (have_pim) {
-                        // Opportunistic PIM scheduling: Host is waiting on timing, do not deduct from PIM turn quota
                         queue = &pim_q; req = pim_req; cmd = pim_cmd; is_valid_req = true;
+                        consecutive_pim++;
                     }
                 }
             }
