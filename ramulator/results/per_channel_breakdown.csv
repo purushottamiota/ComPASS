@@ -3,23 +3,23 @@ Baseline (Host Standalone),baseline,0,0,534416,1277,0.000,0.00
 Baseline (Host Standalone),baseline,1,0,0,0,0.000,0.00
 Baseline (Host Standalone),baseline,2,0,537011,1270,0.000,0.00
 Baseline (Host Standalone),baseline,3,0,0,0,0.000,0.00
-FR-FCFS (Shared Queue),frfcfs,0,65536,542981,59008,0.780,98.20
-FR-FCFS (Shared Queue),frfcfs,1,65536,0,367,0.780,98.44
-FR-FCFS (Shared Queue),frfcfs,2,65536,546064,60922,0.780,98.24
-FR-FCFS (Shared Queue),frfcfs,3,65536,0,367,0.780,98.44
-"Batch (PAR-BS, batch=64)",batch,0,65536,536507,57557,0.787,98.25
-"Batch (PAR-BS, batch=64)",batch,1,65536,0,370,0.787,98.44
-"Batch (PAR-BS, batch=64)",batch,2,65536,538981,61399,0.787,98.22
-"Batch (PAR-BS, batch=64)",batch,3,65536,0,370,0.787,98.44
-Throughput Balancer (ST-BLC),stblc,0,65536,540684,73686,0.786,98.28
-Throughput Balancer (ST-BLC),stblc,1,65536,0,356,0.786,98.44
-Throughput Balancer (ST-BLC),stblc,2,65536,543589,76691,0.786,98.29
-Throughput Balancer (ST-BLC),stblc,3,65536,0,356,0.786,98.44
-Throughput Balancer (AT-BLC),atblc,0,65536,541028,77278,0.786,98.24
-Throughput Balancer (AT-BLC),atblc,1,65536,0,356,0.786,98.44
-Throughput Balancer (AT-BLC),atblc,2,65536,543927,78428,0.786,98.21
-Throughput Balancer (AT-BLC),atblc,3,65536,0,356,0.786,98.44
-"Elastic Balancer (E-BLC, Novel)",eblc,0,65536,540993,74416,0.785,98.25
-"Elastic Balancer (E-BLC, Novel)",eblc,1,65536,0,356,0.785,98.44
-"Elastic Balancer (E-BLC, Novel)",eblc,2,65536,543722,76536,0.785,98.27
-"Elastic Balancer (E-BLC, Novel)",eblc,3,65536,0,356,0.785,98.44
+FR-FCFS (Shared Queue),frfcfs,0,65536,538728,59808,0.782,98.23
+FR-FCFS (Shared Queue),frfcfs,1,65536,0,367,0.782,98.44
+FR-FCFS (Shared Queue),frfcfs,2,65536,541635,56110,0.782,98.18
+FR-FCFS (Shared Queue),frfcfs,3,65536,0,367,0.782,98.44
+"Batch (PAR-BS, batch=64)",batch,0,65536,539620,56920,0.781,98.19
+"Batch (PAR-BS, batch=64)",batch,1,65536,0,370,0.781,98.44
+"Batch (PAR-BS, batch=64)",batch,2,65536,541968,59365,0.781,98.21
+"Batch (PAR-BS, batch=64)",batch,3,65536,0,370,0.781,98.44
+Throughput Balancer (ST-BLC),stblc,0,65536,538872,74866,0.791,98.29
+Throughput Balancer (ST-BLC),stblc,1,65536,0,356,0.791,98.44
+Throughput Balancer (ST-BLC),stblc,2,65536,541678,77087,0.791,98.25
+Throughput Balancer (ST-BLC),stblc,3,65536,0,356,0.791,98.44
+Throughput Balancer (AT-BLC),atblc,0,65536,540245,77003,0.787,98.22
+Throughput Balancer (AT-BLC),atblc,1,65536,0,356,0.787,98.44
+Throughput Balancer (AT-BLC),atblc,2,65536,543040,76958,0.787,98.25
+Throughput Balancer (AT-BLC),atblc,3,65536,0,356,0.787,98.44
+"Elastic Balancer (E-BLC, Novel)",eblc,0,65536,543865,76809,0.780,98.27
+"Elastic Balancer (E-BLC, Novel)",eblc,1,65536,0,356,0.780,98.44
+"Elastic Balancer (E-BLC, Novel)",eblc,2,65536,546844,75938,0.780,98.24
+"Elastic Balancer (E-BLC, Novel)",eblc,3,65536,0,356,0.780,98.44
