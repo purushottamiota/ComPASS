@@ -7,10 +7,6 @@ This repository contains the complete end-to-end implementation, architectural e
 1. **Samsung PIMSimulator (Part A)**: Cycle-level PIM architecture modeling multi-bank `PIM-ACT` simultaneous activation, 35-optype ISA encoding (Table 1), PREA-aware scheduling (§5.1), $352\text{ ns}$ mode-switch overhead elimination, and Architecture-Aware Optimization (AAO) reproducing Figure 7 speedups.
 2. **Ramulator (Part B)**: Cycle-accurate memory simulator configured with 16 out-of-order CPU cores running SPEC CPU2006 workloads co-executing with PIM macro/micro-request streams over 4-channel LPDDR5-6400 DRAM, featuring FR-FCFS, Batch (PAR-BS), ST-BLC, AT-BLC, and our novel contribution **E-BLC** (Elastic Bank-Conflict Aware Balancer).
 
-For detailed architectural specifications, parameter choices, and paper inconsistency resolutions, see:
-- [REPRODUCTION_SPEC.md](REPRODUCTION_SPEC.md): Formal reproduction specification, queueing parameters, and architectural details.
-- [COMPASS_STUDY_GUIDE_AND_ARCHITECTURE.md](COMPASS_STUDY_GUIDE_AND_ARCHITECTURE.md): Architectural study guide, memory controller models, and line-by-line diffs.
-- [docs/deviations.md](docs/deviations.md): Architectural deviations, timing parameters, and measurement scope analysis.
 
 ---
 
