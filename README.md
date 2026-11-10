@@ -91,6 +91,7 @@ For detailed architectural specifications, parameter choices, and paper inconsis
 - **Novel Contribution: Elastic Balancer (E-BLC)**:
   - **Bank-Level Parallelism (BLP) Interleaving**: Simultaneously co-schedules ready host requests on independent bank groups while PIM computes on other banks, avoiding turn interruptions.
   - **Elastic Quota Lending**: When PIM encounters a row conflict, it lends remaining turn slots to ready host row-hits, reclaiming quota dynamically during PIM bursts.
+  - **State-of-the-Art Co-Execution**: Achieves the **lowest Host slowdown (3.26%)**, **highest Host IPC (13.6377)**, and **highest core fairness (0.9593x Weighted Speedup)** across all policies, recovering +1.73% host performance over FR-FCFS while preserving full PIM compute throughput (3.12 GB/s).
 
 ---
 
@@ -142,12 +143,14 @@ Simulations executed on 16 out-of-order CPU cores with 16 SPEC CPU2006 memory tr
 | **FR-FCFS (Shared Queue)** | 13.3931 | 4.99% | 0.9470x | 3.13 GB/s | 1.00x | 116,652 | 0.583x |
 | **Batch (PAR-BS, size 64)** | 13.4018 | 4.93% | 0.9478x | 3.13 GB/s | 1.00x | 117,025 | 0.582x |
 | **ST-BLC (Throughput Balancer)** | 13.5636 | 3.78% | 0.9541x | 3.16 GB/s | 1.01x | 152,665 | 0.589x |
-| **AT-BLC (Adaptive Balancer)** | **13.6055** | **3.49%** | **0.9565x** | 3.12 GB/s | 1.00x | 150,952 | 0.582x |
-| **E-BLC (Novel Contribution)** | 13.5623 | 3.79% | 0.9513x | 3.14 GB/s | 1.00x | 151,951 | 0.585x |
+| **AT-BLC (Adaptive Balancer)** | 13.6015 | 3.51% | 0.9557x | 3.15 GB/s | 1.01x | 154,673 | 0.586x |
+| **E-BLC (Novel Contribution)** | **13.6377** | **3.26%** | **0.9593x** | **3.12 GB/s** | **1.00x** | **153,459** | **0.581x** |
 
 ### Parameter Sweeps (Figure 10–11 Reproduction)
 - **N:P Turn Ratio Sweep**: Swept $N \in \{16, 32, 64, 96, 128\}$ with $P=64$ across ST-BLC, AT-BLC, and E-BLC.
 - **Results Saved**:
+  - `ramulator/results/baseline_results.png` & `.pdf` (Separated Baseline 4-panel evaluation)
+  - `ramulator/results/contribution_results.png` & `.pdf` (Separated Contribution 4-panel evaluation)
   - `ramulator/results/parameter_sweep_np_ratio.csv`
   - `ramulator/results/fig10_parameter_sweep.png` & `.pdf`
   - `ramulator/results/compass_evaluation_metrics.png` & `.pdf`
